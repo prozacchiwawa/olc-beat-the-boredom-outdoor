@@ -18704,22 +18704,6 @@ var mapPalette = /* array */[/* array */[
     ],
     /* tuple */[
       14,
-      1
-    ],
-    /* tuple */[
-      14,
-      2
-    ],
-    /* tuple */[
-      14,
-      3
-    ],
-    /* tuple */[
-      14,
-      4
-    ],
-    /* tuple */[
-      14,
       5
     ],
     /* tuple */[
@@ -18733,6 +18717,22 @@ var mapPalette = /* array */[/* array */[
     /* tuple */[
       12,
       3
+    ],
+    /* tuple */[
+      14,
+      4
+    ],
+    /* tuple */[
+      14,
+      3
+    ],
+    /* tuple */[
+      14,
+      2
+    ],
+    /* tuple */[
+      14,
+      1
     ]
   ]];
 
