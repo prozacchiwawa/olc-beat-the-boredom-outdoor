@@ -58,6 +58,20 @@ let clearGroundPalette =
     |]
   |]
 
+let mapPalette =
+  [|
+    [| (8,2)
+     ; (14,1)
+     ; (14,2)
+     ; (14,3)
+     ; (14,4)
+     ; (14,5)
+     ; (13,5)
+     ; (13,4)
+     ; (12,3)
+    |]
+  |]
+
 type displaySpec =
   { context2d : context2d
   ; width : int
@@ -148,11 +162,35 @@ let drawMenu spec textLines =
     (int_of_float top)
   |> ignore
 
-let displayScreen spec weather tod = function
+let drawMapScreen spec weather tod (ground : Perlin.ground) =
+  let ctx = spec.context2d in
+  let palette = Array.get mapPalette 0 in
+  let bgColor = Array.get palette ((Array.length palette) - 1) in
+  let _ = setFillStyle ctx @@ fillStyleOfString @@ stringOfColor @@ colorOfCoord bgColor in
+  for i = 0 to ground.groundY - 1 do
+    let yTop = (i * spec.height) / ground.groundY in
+    let yBot = ((i + 1) * spec.height) / ground.groundY in
+    for j = 0 to ground.groundX - 1 do
+      let xLeft = (j * spec.width) / ground.groundX in
+      let xRight = ((j + 1) * spec.width) / ground.groundX in
+      let level = Array.get ground.groundData ((i * ground.groundX) + j) in
+      let color = colorOfCoord @@ colorFromPalette palette level in
+      let _ = setFillStyle ctx @@ fillStyleOfString @@ stringOfColor color in
+      fillRect ctx xLeft yTop (xRight - xLeft) (yBot - yTop)
+    done
+  done
+
+let displayScreen spec weather tod ground = function
   | Gamestate.HomeScreen ->
     let _ = drawFirstPersonBackdrop spec weather tod in
     drawMenu spec
       [ { color = "white" ; str = "Start" } ]
+  | Gamestate.MapScreen ->
+    drawMapScreen spec weather tod ground
+  | Gamestate.CampScreen ->
+    let _ = drawFirstPersonBackdrop spec weather tod in
+    drawMenu spec
+      [ { color = "yellow" ; str = "CampScreen" } ]
   | Gamestate.FirstPerson ->
     drawFirstPersonBackdrop spec weather tod
   | _ ->

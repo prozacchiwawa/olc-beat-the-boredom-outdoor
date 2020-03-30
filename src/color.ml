@@ -143,3 +143,12 @@ let colorOfCoord (y,x) = Array.get palette (y * 8 + x)
 
 let stringOfColor color =
   Printf.sprintf "rgba(%d,%d,%d,%f)" color.r color.g color.b color.a
+
+let colorFromPalette palette level =
+  let colorChoice =
+    min
+      ((Array.length palette) - 1)
+      (int_of_float (Math.floor (level *. (float_of_int (Array.length palette)))))
+  in
+  Array.get palette colorChoice
+

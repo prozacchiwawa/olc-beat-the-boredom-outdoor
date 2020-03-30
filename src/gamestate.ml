@@ -146,9 +146,23 @@ let newGame () =
   ; weather = Clear
   }
 
-let runGame game keys ts =
-  let realTime = ts -. game.startTime in
-  { game with
-    worldTime = realTime /. (game.gameSpeed *. 1000.0)
-  ; realTime = realTime
-  }
+let startGame game =
+  { game with mode = MapScreen }
+
+let runGame game' keys ts =
+  match game'.mode with
+  | HomeScreen ->
+    let spacePressed = StringSet.mem " " keys in
+    if spacePressed then
+      startGame game'
+    else
+      game'
+  | _ ->
+    let realTime = ts -. game'.startTime in
+    let game =
+      { game' with
+        worldTime = realTime /. (game'.gameSpeed *. 1000.0)
+      ; realTime = realTime
+      }
+    in
+    game
