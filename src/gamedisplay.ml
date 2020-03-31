@@ -1,5 +1,7 @@
 open Color
 open Canvas
+open Image
+open ImageMethods
 open Allstate
 
 let clearSkyPalette =
@@ -212,7 +214,6 @@ let drawGroundGradient disp steps palette =
 
 let drawFirstPersonBackdrop state =
   let ctx = state.spec.context2d in
-  let _ = Js.log state.spec in
   let bgcolor = backgroundColor state.game.weather state.game.timeOfDay in
   let skyPalette = backgroundPaletteByTimeOfDay state.game.weather state.game.timeOfDay in
   let groundPalette = groundPaletteByTimeOfDay state.game.weather state.game.timeOfDay in
@@ -226,47 +227,6 @@ let drawFirstPersonBackdrop state =
   drawGroundGradient state.spec groundSteps groundPalette
 
 let unimplementedStr = "Unimplemented"
-
-type textLine =
-  { color : string
-  ; str : string
-  }
-
-let drawMenu spec textLines =
-  let ctx = spec.context2d in
-  let withMetrics = List.map (fun tl -> (measureText ctx tl.str, tl)) textLines in
-  let ascents = List.map (fun (m,_) -> getFontBBAscent m) withMetrics in
-  let descents = List.map (fun (m,_) -> getFontBBDescent m) withMetrics in
-  let fullHeight = (List.fold_left (+.) 0.0 ascents) +. (List.fold_left (+.) 0.0 descents) in
-  let top = ((float_of_int spec.height) -. fullHeight) /. 2.0 in
-  withMetrics
-  |> List.fold_left
-    (fun y (m,tl) ->
-       let ascent = getFontBBAscent m |> int_of_float in
-       let descent = getFontBBDescent m |> int_of_float in
-       let width = getMeasureWidth m in
-       let x = ((float_of_int spec.width) -. width) /. 2.0 in
-       let _ = setFillStyle ctx @@ fillStyleOfString tl.color in
-       let _ = fillText ctx tl.str (int_of_float x) (y + ascent) in
-       (y + ascent + descent)
-    )
-    (int_of_float top)
-  |> ignore
-
-let playerSprite =
-  [ "  x  "
-  ; " xxx "
-  ; "  x  "
-  ; " x x "
-  ]
-
-type compiledSprite =
-  { definition : string list
-  ; compiled : image
-  }
-
-let drawSprite spec sprite x y =
-  ()
 
 let drawMapScreen state =
   let ctx = state.spec.context2d in
@@ -285,7 +245,13 @@ let drawMapScreen state =
       fillRect ctx xLeft yTop (xRight - xLeft) (yBot - yTop)
     done
   done ;
-  drawSprite state.spec playerSprite state.game.player.x state.game.player.y
+  Sprite.drawSpriteCenter
+    state.spec
+    SpriteDefs.playerSprite
+    (int_of_float state.game.player.x)
+    (int_of_float state.game.player.y)
+    SpriteDefs.playerSprite.width
+    SpriteDefs.playerSprite.height
 
 let drawHud state =
   let str =
@@ -307,7 +273,7 @@ let displayScreen state =
     let theGame = state.game in
     let sunnyGame = { theGame with weather = Gamestate.Clear ; timeOfDay = 0.5 } in
     let _ = drawFirstPersonBackdrop { state with game = sunnyGame } in
-    drawMenu state.spec
+    Menu.drawMenu state.spec
       [ { color = "white" ; str = "Start" } ]
   | Gamestate.MapScreen ->
     let _ = drawMapScreen state in
@@ -315,7 +281,7 @@ let displayScreen state =
   | Gamestate.CampScreen ->
     let _ = drawFirstPersonBackdrop state in
     let _ = drawHud state in
-    drawMenu state.spec
+    Menu.drawMenu state.spec
       [ { color = "yellow" ; str = "CampScreen" } ]
   | Gamestate.FirstPerson ->
     let _ = drawFirstPersonBackdrop state in

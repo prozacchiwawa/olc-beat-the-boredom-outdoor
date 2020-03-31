@@ -1,11 +1,11 @@
 open Contypes
+open Constants
 open Canvas
 open Color
 open Time
 open Window
 open Allstate
 
-let worldSide = 64
 let keysPressed = ref StringSet.empty
 
 let runGame state ts =

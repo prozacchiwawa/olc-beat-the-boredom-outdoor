@@ -1,4 +1,5 @@
 open Contypes
+open Constants
 
 type know
   = Mineral of (float * float)
@@ -22,8 +23,8 @@ type player =
   }
 
 let newPlayer () =
-  { x = 0.0
-  ; y = 0.0
+  { x = (float_of_int worldSide) /. 2.0
+  ; y = (float_of_int worldSide) /. 2.0
 
   ; food = 1.0
   ; gold = 0.0
@@ -115,8 +116,30 @@ let newGame world =
   ; workers = []
   }
 
+let startingCities = 4
+
+let generateStartCities game =
+  let cities =
+    Array.init
+      startingCities
+      (fun _ ->
+         let cx = (Math.random ()) *. (float_of_int worldSide) in
+         let cy = (Math.random ()) *. (float_of_int worldSide) in
+         { x = cx
+         ; y = cy
+         ; population = 100.0
+         ; minerals = 10.0
+         ; food = 100.0
+         }
+      )
+  in
+  { game with
+    cities = Array.to_list cities
+  }
+
 let startGame game =
   { game with mode = MapScreen }
+  |> generateStartCities
 
 let oneFrame game ts =
   let realTime = ts -. game.startTime in
