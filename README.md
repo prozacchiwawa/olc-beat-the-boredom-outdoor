@@ -61,6 +61,25 @@
 - Add workers
 - Add wolves
 
+# Game play
+
+- Map screen allows moving, has a menu around the player.  Pressing the action button
+  switches between menu mode and movement mode.
+  
+- Menu mode puts menu items around the center of the screen in a cross, with the middle,
+  "Return to map" in the center.
+  
+- Options are 'Stop Moving', 'Camp', 'Travel Fast [...]', 'Fight' if enemies apply
+
+- Moving slowly has a chance of revealing very nearby resources.
+
+- Fast travel does not reveal resources.
+
+- Camping reveals nearby resources quickly.
+
+- Move mode puts a cursor and dots on the screen and the cursor blinks.  You move the cursor
+  and set a location, after which there's a blinking move target.
+
 # Build
 ```
 npm run build
