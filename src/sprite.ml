@@ -1,9 +1,7 @@
-open Contypes
 open Color
 open Allstate
 open Canvas
 open Image
-open ImageMethods
 
 type spriteRow =
   { color : int * int

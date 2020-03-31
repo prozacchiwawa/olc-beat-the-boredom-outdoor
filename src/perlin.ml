@@ -1,4 +1,3 @@
-open Contypes
 
 type ground =
   { groundX : int

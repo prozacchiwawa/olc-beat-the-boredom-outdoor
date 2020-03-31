@@ -139,7 +139,7 @@ let cityRuinTime = 1.0
 let eatingRate = 0.33
 
 (* Advance a city by the time increment, possibly producing an effect. *)
-let runCity game incT (city : city) =
+let runCity (_ : gamestate) incT (city : city) =
   if city.ruin > 0.0 then
     let ruined = city.ruin -. incT in
     if ruined <= 0.0 then

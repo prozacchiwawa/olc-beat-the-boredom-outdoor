@@ -1,11 +1,9 @@
 open Color
 open Canvas
-open Image
-open ImageMethods
 open Allstate
 open Gamepalette
 
-let rec drawSkyGradient disp steps palette =
+let drawSkyGradient disp steps palette =
   let ctx = disp.context2d in
   for thisStep = 0 to (Array.length palette) - 1 do
     let nextColor = Array.get palette thisStep in

@@ -1,9 +1,6 @@
 open Contypes
 open Constants
 open Canvas
-open Color
-open Time
-open Window
 open Allstate
 
 let keysPressed = ref StringSet.empty

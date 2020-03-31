@@ -26,4 +26,3 @@ let drawMenu spec textLines =
     )
     (int_of_float top)
   |> ignore
-

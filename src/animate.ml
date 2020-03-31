@@ -4,7 +4,7 @@ open Time
 let getWindow : unit -> window = [%bs.raw {| function() { return window; } |} ]
 let window = getWindow ()
 
-external requestAnimationFrame : window -> (unit -> unit) -> unit = "" [@@bs.send]
+external requestAnimationFrame : window -> (unit -> unit) -> unit = "requestAnimationFrame" [@@bs.send]
 
 type 'a animation =
   { continuing : bool ref

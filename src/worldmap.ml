@@ -2,8 +2,6 @@ open Contypes
 open Allstate
 open Color
 open Canvas
-open Weather
-open Tod
 open Gamestate
 open Gamepalette
 
