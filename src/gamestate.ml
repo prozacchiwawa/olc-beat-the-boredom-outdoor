@@ -1,102 +1,36 @@
 open Contypes
 
-type animalBase
-  = PoisonSnake
-  | SafeSnake
-  | Rodent
-  | Bird
-  | Dog
-  | Cat
-  | Predator
-
-type animal =
-  { base : animalBase
-  ; name : string
-  ; aggression : float
-  ; tame : float
-  }
-
-type fruitData =
-  { citrus : bool
-  ; pulpRatio : float
-  ; juiceRatio : float
-  ; name : string
-  }
-
-type foodItemBase
-  = Meat of animal
-  | WildGreens of string
-  | Legumes of string
-  | Berries of string
-  | Fruit of fruitData
-
-type foodItem =
-  { base : foodItemBase
-  ; age : float
-  ; spoilage : float
-  ; amount : float
-  }
-
-type drinkBase
-  = Water of float
-  | Juice of fruitData
-  | Blood of animal
-
-type basicDrinkable =
-  { base : drinkBase
-  ; amount : float
-  }
-
-type drinkMix =
-  { mixedAmount : float
-  ; mixedWith : basicDrinkable
-  }
-
-type drinkable
-  = Single of basicDrinkable
-  | Mixture of drinkMix list
-
-type item
-  = Pick
-  | Knife
-  | Lantern
-  | Bag of item list
-  | Drink of drinkable
-  | Food of foodItem
-  | MortarAndPestle
-  | ClosedVessel of drinkable option
-  | OpenVessel
-
-type microbe =
-  { name : string
-  ; pain : float
-  ; slowdown : float
-  ; lungs : float
-  ; stomach : float
-  ; fatigue : float
-  }
-
-type playerHealth =
-  { sleep : float
-  ; thirst : float
-  ; hunger : float
-  ; microbe : microbe option
-  }
+type know
+  = Mineral of (float * float)
+  | Plants of (float * float)
+  | Herd of string
+  | WolfPack of string
+  | Den of (float * float)
+  | Bandits of string
+  | BanditHome of (float * float)
 
 type player =
   { x : float
   ; y : float
 
-  ; inventory : item list
+  ; food : float
+  ; gold : float
 
-  ; health : playerHealth
+  ; knowledge : know list
+
+  ; health : float
   }
 
 let newPlayer () =
   { x = 0.0
   ; y = 0.0
-  ; inventory = []
-  ; health = { sleep = 1.0 ; thirst = 0.0 ; hunger = 0.0 ; microbe = None }
+
+  ; food = 1.0
+  ; gold = 0.0
+
+  ; knowledge = []
+
+  ; health = 1.0
   }
 
 type gameMode
@@ -115,6 +49,28 @@ type weather
   | Storm
   | Fog
 
+type city =
+  { x : float
+  ; y : float
+  ; population : float
+  ; minerals : float
+  ; food : float
+  }
+
+type workerTarget
+  = TargetEntity of string
+  | TargetCoords of (float * float)
+
+type worker =
+  { id : string
+  ; x : float
+  ; y : float
+  ; health : float
+  ; minerals : float
+  ; food : float
+  ; target : workerTarget
+  }
+
 type gamestate =
   { startTime : float
   ; worldTime : float
@@ -127,6 +83,8 @@ type gamestate =
   ; world : Perlin.ground
   ; paused : bool
   ; keys : StringSet.t
+  ; cities : city list
+  ; workers : worker list
   }
 
 let midnight = 0.0
@@ -153,10 +111,22 @@ let newGame world =
   ; world = world
   ; paused = true
   ; keys = StringSet.empty
+  ; cities = []
+  ; workers = []
   }
 
 let startGame game =
   { game with mode = MapScreen }
+
+let oneFrame game ts =
+  let realTime = ts -. game.startTime in
+  let worldTime = realTime /. (game.gameSpeed *. 1000.0) in
+  let timeOfDay = timeOfDayFromWorldTime worldTime in
+  { game with
+    worldTime = worldTime
+  ; realTime = realTime
+  ; timeOfDay = timeOfDay
+  }
 
 let runGame game' keys ts =
   let newlyPressed = StringSet.diff keys game'.keys in
@@ -174,12 +144,4 @@ let runGame game' keys ts =
     if paused then
       gameWithPause
     else
-      let realTime = ts -. game''.startTime in
-      let worldTime = realTime /. (game''.gameSpeed *. 1000.0) in
-      let timeOfDay = timeOfDayFromWorldTime worldTime in
-      { gameWithPause with
-        worldTime = worldTime
-      ; realTime = realTime
-      ; timeOfDay = timeOfDay
-      ; paused = paused
-      }
+      oneFrame gameWithPause ts

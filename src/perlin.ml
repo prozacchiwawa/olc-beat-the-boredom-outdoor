@@ -46,10 +46,11 @@ let noiseField noise x y =
       )
   in
   let minSample' = Array.fold_left min (Array.get groundData 0) groundData in
-  let maxSample = Array.fold_left max (Array.get groundData 0) groundData in
-  let minSample = ((maxSample -. minSample') /. 4.5) +. minSample' in
+  let maxSample' = Array.fold_left max (Array.get groundData 0) groundData in
+  let minSample = ((maxSample' -. minSample') /. 4.5) +. minSample' in
+  let maxSample = (0.8 *. (maxSample' -. minSample')) +. minSample' in
   let normalizedGround =
-    Array.map (fun g -> max 0.0 ((g -. minSample) /. (maxSample -. minSample))) groundData
+    Array.map (fun g -> min 1.0 (max 0.0 ((g -. minSample) /. (maxSample -. minSample)))) groundData
   in
   let _ = Js.log normalizedGround in
   { groundX = x

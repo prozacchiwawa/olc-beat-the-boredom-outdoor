@@ -19006,20 +19006,16 @@ var mapPalette = /* array */[
       2
     ],
     /* tuple */[
-      14,
-      3
+      12,
+      1
     ],
     /* tuple */[
       14,
       2
     ],
     /* tuple */[
-      14,
-      1
-    ],
-    /* tuple */[
-      14,
-      0
+      0,
+      5
     ]
   ],
   /* array */[
@@ -19044,20 +19040,16 @@ var mapPalette = /* array */[
       3
     ],
     /* tuple */[
-      14,
-      4
+      12,
+      2
     ],
     /* tuple */[
       14,
       3
     ],
     /* tuple */[
-      14,
-      2
-    ],
-    /* tuple */[
-      14,
-      1
+      0,
+      6
     ]
   ],
   /* array */[
@@ -19082,20 +19074,16 @@ var mapPalette = /* array */[
       3
     ],
     /* tuple */[
-      14,
-      4
+      12,
+      2
     ],
     /* tuple */[
       14,
       3
     ],
     /* tuple */[
-      14,
-      2
-    ],
-    /* tuple */[
-      14,
-      1
+      0,
+      7
     ]
   ],
   /* array */[
@@ -19120,20 +19108,16 @@ var mapPalette = /* array */[
       3
     ],
     /* tuple */[
-      14,
-      4
+      12,
+      2
     ],
     /* tuple */[
       14,
       3
     ],
     /* tuple */[
-      14,
-      2
-    ],
-    /* tuple */[
-      14,
-      1
+      0,
+      6
     ]
   ]
 ];
@@ -19309,6 +19293,8 @@ function displayScreen(state) {
         var sunnyGame_world = theGame.world;
         var sunnyGame_paused = theGame.paused;
         var sunnyGame_keys = theGame.keys;
+        var sunnyGame_cities = theGame.cities;
+        var sunnyGame_workers = theGame.workers;
         var sunnyGame = {
           startTime: sunnyGame_startTime,
           worldTime: sunnyGame_worldTime,
@@ -19320,7 +19306,9 @@ function displayScreen(state) {
           weather: /* Clear */0,
           world: sunnyGame_world,
           paused: sunnyGame_paused,
-          keys: sunnyGame_keys
+          keys: sunnyGame_keys,
+          cities: sunnyGame_cities,
+          workers: sunnyGame_workers
         };
         drawFirstPersonBackdrop({
               game: sunnyGame,
@@ -19404,13 +19392,10 @@ function newPlayer(param) {
   return {
           x: 0.0,
           y: 0.0,
-          inventory: /* [] */0,
-          health: {
-            sleep: 1.0,
-            thirst: 0.0,
-            hunger: 0.0,
-            microbe: undefined
-          }
+          food: 1.0,
+          gold: 0.0,
+          knowledge: /* [] */0,
+          health: 1.0
         };
 }
 
@@ -19431,19 +19416,18 @@ function newGame(world) {
           player: {
             x: 0.0,
             y: 0.0,
-            inventory: /* [] */0,
-            health: {
-              sleep: 1.0,
-              thirst: 0.0,
-              hunger: 0.0,
-              microbe: undefined
-            }
+            food: 1.0,
+            gold: 0.0,
+            knowledge: /* [] */0,
+            health: 1.0
           },
           mode: /* HomeScreen */0,
           weather: /* Clear */0,
           world: world,
           paused: true,
-          keys: Contypes.StringSet.empty
+          keys: Contypes.StringSet.empty,
+          cities: /* [] */0,
+          workers: /* [] */0
         };
 }
 
@@ -19459,7 +19443,30 @@ function startGame(game) {
           weather: game.weather,
           world: game.world,
           paused: game.paused,
-          keys: game.keys
+          keys: game.keys,
+          cities: game.cities,
+          workers: game.workers
+        };
+}
+
+function oneFrame(game, ts) {
+  var realTime = ts - game.startTime;
+  var worldTime = realTime / (game.gameSpeed * 1000.0);
+  var timeOfDay = timeOfDayFromWorldTime(worldTime);
+  return {
+          startTime: game.startTime,
+          worldTime: worldTime,
+          realTime: realTime,
+          timeOfDay: timeOfDay,
+          gameSpeed: game.gameSpeed,
+          player: game.player,
+          mode: game.mode,
+          weather: game.weather,
+          world: game.world,
+          paused: game.paused,
+          keys: game.keys,
+          cities: game.cities,
+          workers: game.workers
         };
 }
 
@@ -19476,6 +19483,8 @@ function runGame(game$prime, keys, ts) {
   var game$prime$prime_weather = game$prime.weather;
   var game$prime$prime_world = game$prime.world;
   var game$prime$prime_paused = game$prime.paused;
+  var game$prime$prime_cities = game$prime.cities;
+  var game$prime$prime_workers = game$prime.workers;
   var game$prime$prime = {
     startTime: game$prime$prime_startTime,
     worldTime: game$prime$prime_worldTime,
@@ -19487,7 +19496,9 @@ function runGame(game$prime, keys, ts) {
     weather: game$prime$prime_weather,
     world: game$prime$prime_world,
     paused: game$prime$prime_paused,
-    keys: keys
+    keys: keys,
+    cities: game$prime$prime_cities,
+    workers: game$prime$prime_workers
   };
   var match = game$prime$prime_mode;
   if (match !== 0) {
@@ -19501,6 +19512,8 @@ function runGame(game$prime, keys, ts) {
     var gameWithPause_mode = game$prime$prime_mode;
     var gameWithPause_weather = game$prime$prime_weather;
     var gameWithPause_world = game$prime$prime_world;
+    var gameWithPause_cities = game$prime$prime_cities;
+    var gameWithPause_workers = game$prime$prime_workers;
     var gameWithPause = {
       startTime: gameWithPause_startTime,
       worldTime: gameWithPause_worldTime,
@@ -19512,27 +19525,14 @@ function runGame(game$prime, keys, ts) {
       weather: gameWithPause_weather,
       world: gameWithPause_world,
       paused: paused,
-      keys: keys
+      keys: keys,
+      cities: gameWithPause_cities,
+      workers: gameWithPause_workers
     };
     if (paused) {
       return gameWithPause;
     } else {
-      var realTime = ts - game$prime$prime_startTime;
-      var worldTime = realTime / (game$prime$prime_gameSpeed * 1000.0);
-      var timeOfDay = timeOfDayFromWorldTime(worldTime);
-      return {
-              startTime: gameWithPause_startTime,
-              worldTime: worldTime,
-              realTime: realTime,
-              timeOfDay: timeOfDay,
-              gameSpeed: gameWithPause_gameSpeed,
-              player: gameWithPause_player,
-              mode: gameWithPause_mode,
-              weather: gameWithPause_weather,
-              world: gameWithPause_world,
-              paused: paused,
-              keys: keys
-            };
+      return oneFrame(gameWithPause, ts);
     }
   } else if (spacePressed) {
     return startGame(game$prime$prime);
@@ -19557,6 +19557,7 @@ exports.dusk = dusk;
 exports.timeOfDayFromWorldTime = timeOfDayFromWorldTime;
 exports.newGame = newGame;
 exports.startGame = startGame;
+exports.oneFrame = oneFrame;
 exports.runGame = runGame;
 /* Contypes Not a pure module */
 
@@ -19645,16 +19646,17 @@ function noiseField(noise, x, y) {
             return prim$1;
           }
         }), Caml_array.caml_array_get(groundData, 0), groundData);
-  var maxSample = $$Array.fold_left((function (prim, prim$1) {
+  var maxSample$prime = $$Array.fold_left((function (prim, prim$1) {
           if (prim > prim$1) {
             return prim;
           } else {
             return prim$1;
           }
         }), Caml_array.caml_array_get(groundData, 0), groundData);
-  var minSample = (maxSample - minSample$prime) / 4.5 + minSample$prime;
+  var minSample = (maxSample$prime - minSample$prime) / 4.5 + minSample$prime;
+  var maxSample = 0.8 * (maxSample$prime - minSample$prime) + minSample$prime;
   var normalizedGround = $$Array.map((function (g) {
-          return Caml_primitive.caml_float_max(0.0, (g - minSample) / (maxSample - minSample));
+          return Caml_primitive.caml_float_min(1.0, Caml_primitive.caml_float_max(0.0, (g - minSample) / (maxSample - minSample)));
         }), groundData);
   console.log(normalizedGround);
   return {
