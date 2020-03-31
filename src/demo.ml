@@ -46,6 +46,7 @@ let main _ =
       ; spec = spec
       ; anim = anim
       ; keys = StringSet.empty
+      ; mapcache = ref StringMap.empty
       }
     in
     Animate.startAnimation anim state runGame

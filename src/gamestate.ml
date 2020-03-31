@@ -1,5 +1,7 @@
 open Contypes
 open Constants
+open Weather
+open Tod
 
 type know
   = Mineral of (float * float)
@@ -40,16 +42,6 @@ type gameMode
   | CampScreen
   | FirstPerson
 
-type weather
-  = Clear
-  | Pokkari
-  | Overcast
-  | Rain
-  | Hail
-  | Snow
-  | Storm
-  | Fog
-
 type city =
   { x : float
   ; y : float
@@ -87,15 +79,6 @@ type gamestate =
   ; cities : city list
   ; workers : worker list
   }
-
-let midnight = 0.0
-let dawn = 0.25
-let noon = 0.5
-let dusk = 0.75
-
-let timeOfDayFromWorldTime t =
-  let currentDay = Util.floor t in
-  t -. (float_of_int currentDay)
 
 let newGame world =
   let startT = Time.newTime () in

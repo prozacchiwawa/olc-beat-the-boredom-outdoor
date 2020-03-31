@@ -35,12 +35,13 @@ let rowOpaque r j =
   else
     String.get r.row j != ' '
 
+let squareness = 16
+
 let compileSprite (def : spriteRow array) =
   let (dx,dy) = getSpriteDefDimensions def in
-  CompileSprite.withNewCanvas "hidden" dx dy
+  CompileSprite.withNewCanvas "hidden" (squareness * dx) (squareness * dy)
     (fun canvas ->
        let ctx = getContext2D canvas in
-       let img = newImage dx dy in
        let _ =
          def
          |> Array.mapi
@@ -50,18 +51,16 @@ let compileSprite (def : spriteRow array) =
               in
               for j = 0 to (dx - 1) do
                 if rowOpaque r j then
-                  fillRect ctx j i 1 1
+                  fillRect ctx (j * squareness) (i * squareness) squareness squareness
                 else
                   ()
               done
            )
        in
-       let canvasData = toDataURL canvas in
-       let _ = setAttribute img "src" canvasData in
        { definition = def
        ; width = dx
        ; height = dy
-       ; compiled = img
+       ; compiled = canvasToImage canvas
        }
     )
 
@@ -69,4 +68,4 @@ let drawSpriteCenter spec sprite x y w h =
   let ctx = spec.context2d in
   let cx = (w / 2) in
   let cy = (h / 2) in
-  drawImage ctx sprite.compiled 0 0 sprite.width sprite.height (x - cx) (y - cy) w h
+  drawImage ctx sprite.compiled 0 0 (sprite.width * squareness) (sprite.height * squareness) (x - cx) (y - cy) w h

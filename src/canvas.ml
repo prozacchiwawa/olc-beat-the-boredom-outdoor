@@ -38,3 +38,9 @@ external getFontBBDescent : textMetrics -> float = "actualBoundingBoxDescent" [@
 external drawImage : context2d -> image -> int -> int -> int -> int -> int -> int -> int -> int -> unit = "drawImage" [@@bs.send]
 
 let fillStyleOfString : string -> fillStyle = [%bs.raw {| function(s) { return s; } |}]
+
+module ImageFromCanvasUser = struct
+  type t = image
+end
+
+module ImageFromCanvas = WithCanvas(ImageFromCanvasUser)

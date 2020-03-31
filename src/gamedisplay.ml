@@ -3,192 +3,7 @@ open Canvas
 open Image
 open ImageMethods
 open Allstate
-
-let clearSkyPalette =
-  [|
-    [| (0,0) (* Night *)
-     ; (0,0)
-     ; (0,0)
-     ; (0,0)
-     ; (0,0)
-     ; (0,0)
-     ; (0,0)
-     ; (0,0)
-     ; (0,0)
-     ; (0,0)
-     ; (0,0)
-     ; (6,5)
-     ; (6,5)
-     ; (6,5)
-     ; (5,6)
-     ; (5,6)
-     ; (5,6)
-     ; (5,6)
-     ; (5,6)
-     ; (5,6)
-     ; (4,7)
-     ; (2,7)
-    |]
-  ; [| (7,5) (* Dawn *)
-     ; (7,5)
-     ; (7,5)
-     ; (7,5)
-     ; (7,5)
-     ; (7,5)
-     ; (7,5)
-     ; (7,5)
-     ; (7,5)
-     ; (7,5)
-     ; (7,5)
-     ; (7,5)
-     ; (7,5)
-     ; (6,5)
-     ; (5,6)
-     ; (4,7)
-     ; (3,6)
-     ; (2,5)
-     ; (2,4)
-     ; (3,4)
-     ; (3,3)
-     ; (3,2)
-    |]
-  ; [| (7,5) (* Noon *)
-     ; (7,5)
-     ; (7,5)
-     ; (7,5)
-     ; (7,5)
-     ; (7,5)
-     ; (7,5)
-     ; (7,5)
-     ; (7,5)
-     ; (7,5)
-     ; (7,5)
-     ; (6,5)
-     ; (6,5)
-     ; (6,5)
-     ; (5,6)
-     ; (5,6)
-     ; (5,6)
-     ; (5,6)
-     ; (5,6)
-     ; (5,6)
-     ; (4,7)
-     ; (3,6)
-    |]
-  ; [| (7,5) (* Dusk *)
-     ; (7,5)
-     ; (7,5)
-     ; (7,5)
-     ; (7,5)
-     ; (7,5)
-     ; (7,5)
-     ; (7,5)
-     ; (7,5)
-     ; (7,5)
-     ; (7,5)
-     ; (6,5)
-     ; (6,5)
-     ; (6,5)
-     ; (5,6)
-     ; (5,6)
-     ; (5,6)
-     ; (5,6)
-     ; (5,6)
-     ; (5,6)
-     ; (4,7)
-     ; (2,7)
-    |]
-  |]
-
-let clearGroundPalette =
-  [|
-    [| (14,1)
-     ; (14,2)
-     ; (14,3)
-     ; (14,4)
-     ; (14,5)
-     ; (13,5)
-     ; (13,4)
-     ; (12,3)
-     ; (12,3)
-     ; (12,3)
-     ; (12,3)
-     ; (12,3)
-     ; (12,3)
-     ; (12,3)
-     ; (12,3)
-     ; (12,3)
-     ; (12,3)
-     ; (12,3)
-     ; (12,3)
-     ; (12,3)
-     ; (12,3)
-     ; (12,3)
-     ; (12,3)
-     ; (12,3)
-     ; (12,3)
-    |]
-  |]
-
-let mapPalette =
-  [|
-    [| (8,1) (* Night *)
-     ; (14,4)
-     ; (13,4)
-     ; (13,3)
-     ; (12,2)
-     ; (12,1)
-     ; (14,2)
-     ; (0,5)
-    |]
-  ; [| (8,2) (* Dawn *)
-     ; (14,5)
-     ; (13,5)
-     ; (13,4)
-     ; (12,3)
-     ; (12,2)
-     ; (14,3)
-     ; (0,6)
-    |]
-  ; [| (8,2) (* Noon *)
-     ; (14,5)
-     ; (13,5)
-     ; (13,4)
-     ; (12,3)
-     ; (12,2)
-     ; (14,3)
-     ; (0,7)
-    |]
-  ; [| (8,2) (* Dusk *)
-     ; (14,5)
-     ; (13,5)
-     ; (13,4)
-     ; (12,3)
-     ; (12,2)
-     ; (14,3)
-     ; (0,6)
-    |]
-  |]
-
-let skyPaletteByWeather = function
-  | _ -> clearSkyPalette
-
-let groundPaletteByWeather = function
-  | _ -> clearGroundPalette
-
-let getPaletteByTimeOfDay palettes timeOfDay =
-  let slices = Array.length palettes in
-  Array.get palettes (Util.floor (timeOfDay *. (float_of_int slices)))
-
-let backgroundPaletteByTimeOfDay weather timeOfDay =
-  getPaletteByTimeOfDay (skyPaletteByWeather weather) timeOfDay
-
-let groundPaletteByTimeOfDay weather timeOfDay =
-  getPaletteByTimeOfDay (groundPaletteByWeather weather) timeOfDay
-
-let backgroundColor weather timeOfDay =
-  let palette = backgroundPaletteByTimeOfDay weather timeOfDay in
-  Array.get palette 0
+open Gamepalette
 
 let rec drawSkyGradient disp steps palette =
   let ctx = disp.context2d in
@@ -228,30 +43,30 @@ let drawFirstPersonBackdrop state =
 
 let unimplementedStr = "Unimplemented"
 
+let worldPositionToScreen state x y =
+  let xx = (int_of_float x) * state.spec.width / state.game.world.groundX in
+  let yy = (int_of_float y) * state.spec.height / state.game.world.groundY in
+  (xx,yy)
+
 let drawMapScreen state =
   let ctx = state.spec.context2d in
-  let palette = getPaletteByTimeOfDay mapPalette state.game.timeOfDay in
-  let bgColor = Array.get palette ((Array.length palette) - 1) in
-  let _ = setFillStyle ctx @@ fillStyleOfString @@ stringOfColor @@ colorOfCoord bgColor in
-  for i = 0 to state.game.world.groundY - 1 do
-    let yTop = (i * state.spec.height) / state.game.world.groundY in
-    let yBot = ((i + 1) * state.spec.height) / state.game.world.groundY in
-    for j = 0 to state.game.world.groundX - 1 do
-      let xLeft = (j * state.spec.width) / state.game.world.groundX in
-      let xRight = ((j + 1) * state.spec.width) / state.game.world.groundX in
-      let level = Array.get state.game.world.groundData ((i * state.game.world.groundX) + j) in
-      let color = colorOfCoord @@ colorFromPalette palette level in
-      let _ = setFillStyle ctx @@ fillStyleOfString @@ stringOfColor color in
-      fillRect ctx xLeft yTop (xRight - xLeft) (yBot - yTop)
-    done
-  done ;
+  (* Draw map *)
+  let mapImage = Worldmap.cacheMapScreen state in
+  let _ =
+    drawImage
+      ctx mapImage
+      0 0 state.spec.width state.spec.height
+      0 0 state.spec.width state.spec.height
+  in
+  (* Draw player *)
+  let (px,py) = worldPositionToScreen state state.game.player.x state.game.player.y in
   Sprite.drawSpriteCenter
     state.spec
     SpriteDefs.playerSprite
-    (int_of_float state.game.player.x)
-    (int_of_float state.game.player.y)
-    SpriteDefs.playerSprite.width
-    SpriteDefs.playerSprite.height
+    px
+    py
+    (SpriteDefs.playerSprite.width * 2)
+    (SpriteDefs.playerSprite.height * 2)
 
 let drawHud state =
   let str =
@@ -271,7 +86,7 @@ let displayScreen state =
   match state.game.mode with
   | Gamestate.HomeScreen ->
     let theGame = state.game in
-    let sunnyGame = { theGame with weather = Gamestate.Clear ; timeOfDay = 0.5 } in
+    let sunnyGame = { theGame with weather = Weather.Clear ; timeOfDay = 0.5 } in
     let _ = drawFirstPersonBackdrop { state with game = sunnyGame } in
     Menu.drawMenu state.spec
       [ { color = "white" ; str = "Start" } ]

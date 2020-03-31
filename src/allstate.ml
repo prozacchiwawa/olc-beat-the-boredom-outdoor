@@ -1,4 +1,5 @@
 open Contypes
+open Image
 open Canvas
 
 type displaySpec =
@@ -12,5 +13,6 @@ type allState =
   ; noise : float array
   ; spec : displaySpec
   ; anim : allState Animate.animation
+  ; mapcache : image StringMap.t ref
   ; keys : StringSet.t
   }

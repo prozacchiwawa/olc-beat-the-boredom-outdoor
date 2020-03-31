@@ -66,3 +66,5 @@ module StringOrd = struct
 end
 
 module StringSet = Set.Make(StringOrd)
+module StringMap = Map.Make(StringOrd)
+
