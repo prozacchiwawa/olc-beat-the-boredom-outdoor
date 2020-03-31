@@ -69,7 +69,7 @@ let drawMapScreen state =
   in
   (* Draw cities *)
   state.game.cities |> List.iter
-    (fun (c : Gamestate.city) ->
+    (fun (c : City.city) ->
        let (cx,cy) = worldPositionToScreen state (float_of_int c.x) (float_of_int c.y) in
        Sprite.drawSpriteCenter
          state.spec

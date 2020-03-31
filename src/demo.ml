@@ -7,7 +7,7 @@ let keysPressed = ref StringSet.empty
 
 let runGame state ts =
   let pressed = !keysPressed in
-  let newGame = Gamestate.runGame state.game pressed ts in
+  let newGame = GamestateMethods.runGame state.game pressed ts in
   let newState = { state with game = newGame } in
   let _ = Gamedisplay.displayScreen newState in
   let keys = String.concat "," @@ StringSet.elements !keysPressed in
@@ -38,7 +38,7 @@ let main _ =
         (fun k -> keysPressed := StringSet.remove (String.uppercase_ascii k) !keysPressed)
     in
     let state =
-      { game = Gamestate.newGame world
+      { game = GamestateMethods.newGame world
       ; noise = noise
       ; spec = spec
       ; anim = anim
