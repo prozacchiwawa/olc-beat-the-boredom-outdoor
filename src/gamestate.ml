@@ -38,13 +38,16 @@ let newPlayer () =
 
 type gameMode
   = HomeScreen
+  | GameOverScreen of float
   | MapScreen
   | CampScreen
   | FirstPerson
 
 type city =
-  { x : float
-  ; y : float
+  { x : int
+  ; y : int
+  ; ruin : float
+  ; name : string
   ; population : float
   ; minerals : float
   ; food : float
@@ -61,6 +64,8 @@ type worker =
   ; health : float
   ; minerals : float
   ; food : float
+  ; homeX : int
+  ; homeY : int
   ; target : workerTarget
   }
 
@@ -108,9 +113,11 @@ let generateStartCities game =
       (fun _ ->
          let cx = (Math.random ()) *. (float_of_int worldSide) in
          let cy = (Math.random ()) *. (float_of_int worldSide) in
-         { x = cx
-         ; y = cy
-         ; population = 100.0
+         { x = int_of_float cx
+         ; y = int_of_float cy
+         ; ruin = 0.0
+         ; name = Namegen.generateRandomName 3
+         ; population = 80.0 +. ((Math.random ()) *. 40.0)
          ; minerals = 10.0
          ; food = 100.0
          }
@@ -124,15 +131,60 @@ let startGame game =
   { game with mode = MapScreen }
   |> generateStartCities
 
+type runCityEffect
+  = CityDestroyed of string
+  | SpawnWorker of worker
+
+let cityRuinTime = 1.0
+let eatingRate = 0.33
+
+(* Advance a city by the time increment, possibly producing an effect. *)
+let runCity game incT (city : city) =
+  if city.ruin > 0.0 then
+    let ruined = city.ruin -. incT in
+    if ruined <= 0.0 then
+      let _ = Js.log @@ Printf.sprintf "destroy city %s" city.name in
+      ({ city with ruin = -1.0 }, Some (CityDestroyed city.name))
+    else
+      ({ city with ruin = ruined }, None)
+  else if city.ruin == 0.0 then
+    let updatedFood = city.food -. (city.population *. eatingRate) *. incT in
+    let cityWithFood = { city with food = updatedFood } in
+    if updatedFood < 0.0 then
+      let _ = Js.log @@ Printf.sprintf "ruin city %s" city.name in
+      ({ cityWithFood with ruin = cityRuinTime }, None)
+    else
+      (cityWithFood, None)
+  else
+    (city, None)
+
+let gameOverTime = 5000.0
+
+let takeCityEffect game = function
+  | CityDestroyed name ->
+    { game with cities = game.cities |> List.filter (fun c -> c.name <> name) }
+  | SpawnWorker w -> { game with workers = w :: game.workers }
+
 let oneFrame game ts =
   let realTime = ts -. game.startTime in
   let worldTime = realTime /. (game.gameSpeed *. 1000.0) in
   let timeOfDay = timeOfDayFromWorldTime worldTime in
-  { game with
-    worldTime = worldTime
-  ; realTime = realTime
-  ; timeOfDay = timeOfDay
-  }
+  let timeInc = worldTime -. game.worldTime in
+  let game =
+    { game with
+      worldTime = worldTime
+    ; realTime = realTime
+    ; timeOfDay = timeOfDay
+    }
+  in
+  let cityRes = game.cities |> List.map (runCity game timeInc) in
+  let updCities = cityRes |> List.map (fun (c,_) -> c) in
+  let cityEffects = cityRes |> List.map (fun (_,e) -> e) |> catOptions in
+  let game = cityEffects |> List.fold_left takeCityEffect { game with cities = updCities } in
+  if List.length game.cities == 0 then
+    { game with mode = GameOverScreen (game.realTime +. gameOverTime) }
+  else
+    game
 
 let runGame game' keys ts =
   let newlyPressed = StringSet.diff keys game'.keys in
@@ -141,6 +193,12 @@ let runGame game' keys ts =
   match game''.mode with
   | HomeScreen ->
     if spacePressed then
+      startGame game''
+    else
+      game''
+  | GameOverScreen endGameOver ->
+    let realTime = ts -. game''.startTime in
+    if realTime > endGameOver then
       startGame game''
     else
       game''

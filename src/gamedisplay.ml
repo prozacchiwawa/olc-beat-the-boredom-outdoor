@@ -60,13 +60,27 @@ let drawMapScreen state =
   in
   (* Draw player *)
   let (px,py) = worldPositionToScreen state state.game.player.x state.game.player.y in
-  Sprite.drawSpriteCenter
-    state.spec
-    SpriteDefs.playerSprite
-    px
-    py
-    (SpriteDefs.playerSprite.width * 2)
-    (SpriteDefs.playerSprite.height * 2)
+  let _ =
+    Sprite.drawSpriteCenter
+      state.spec
+      SpriteDefs.playerSprite
+      px
+      py
+      (SpriteDefs.playerSprite.width * 2)
+      (SpriteDefs.playerSprite.height * 2)
+  in
+  (* Draw cities *)
+  state.game.cities |> List.iter
+    (fun (c : Gamestate.city) ->
+       let (cx,cy) = worldPositionToScreen state (float_of_int c.x) (float_of_int c.y) in
+       Sprite.drawSpriteCenter
+         state.spec
+         (if c.ruin != 0.0 then SpriteDefs.ruinSprite else SpriteDefs.citySprite)
+         cx
+         cy
+         (SpriteDefs.citySprite.width * 2)
+         (SpriteDefs.citySprite.height * 2)
+    )
 
 let drawHud state =
   let str =
@@ -90,6 +104,9 @@ let displayScreen state =
     let _ = drawFirstPersonBackdrop { state with game = sunnyGame } in
     Menu.drawMenu state.spec
       [ { color = "white" ; str = "Start" } ]
+  | Gamestate.GameOverScreen _ ->
+    Menu.drawMenu state.spec
+      [ { color = "red" ; str = "Game Over" } ]
   | Gamestate.MapScreen ->
     let _ = drawMapScreen state in
     drawHud state
