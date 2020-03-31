@@ -19770,7 +19770,21 @@ function runGame(game$prime, keys, ts) {
   } else {
     var realTime = ts - game$prime$prime_startTime;
     if (realTime > match[0]) {
-      return startGame(game$prime$prime);
+      return {
+              startTime: game$prime$prime_startTime,
+              worldTime: game$prime$prime_worldTime,
+              realTime: game$prime$prime_realTime,
+              timeOfDay: game$prime$prime_timeOfDay,
+              gameSpeed: game$prime$prime_gameSpeed,
+              player: game$prime$prime_player,
+              mode: /* HomeScreen */0,
+              weather: game$prime$prime_weather,
+              world: game$prime$prime_world,
+              paused: game$prime$prime_paused,
+              keys: keys,
+              cities: game$prime$prime_cities,
+              workers: game$prime$prime_workers
+            };
     } else {
       return game$prime$prime;
     }

@@ -199,7 +199,7 @@ let runGame game' keys ts =
   | GameOverScreen endGameOver ->
     let realTime = ts -. game''.startTime in
     if realTime > endGameOver then
-      startGame game''
+      { game'' with mode = HomeScreen }
     else
       game''
   | _ ->
