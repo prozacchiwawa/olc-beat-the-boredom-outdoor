@@ -24,8 +24,10 @@ let newGame world =
   ; world = world
   ; paused = true
   ; keys = StringSet.empty
-  ; cities = []
-  ; workers = []
+  ; cities = StringMap.empty
+  ; workers = StringMap.empty
+  ; known = IPointMap.empty
+  ; plants = IPointSet.empty
   }
 
 let startingCities = 4
@@ -48,7 +50,8 @@ let generateStartCities game =
       )
   in
   { game with
-    cities = Array.to_list cities
+    cities =
+      Array.fold_left (fun m c -> StringMap.add c.name c m) StringMap.empty cities
   }
 
 let startGame game =
@@ -57,10 +60,43 @@ let startGame game =
 
 let gameOverTime = 5000.0
 
-let takeCityEffect game = function
-  | CityDestroyed name ->
-    { game with cities = game.cities |> List.filter (fun c -> c.name <> name) }
-  | SpawnWorker w -> { game with workers = w :: game.workers }
+let addWorkerProduct game w =
+  try
+    let city = StringMap.find w.Worker.home game.cities in
+    { game with
+      cities =
+        StringMap.add
+          city.name
+          { city with
+            food = city.food +. w.food
+          ; minerals = city.minerals +. w.minerals
+          }
+          game.cities
+    ; workers = StringMap.remove w.name game.workers
+    }
+  with _ ->
+    { game with workers = StringMap.remove w.name game.workers }
+
+let takeWorkerResults game = function
+  | Worker.WorkerSucceed w -> addWorkerProduct game w
+  | Worker.WorkerMove w ->
+    { game with workers = StringUpdateMap.go w.name (fun _ -> Some w) game.workers }
+  | Worker.WorkerDie name ->
+    { game with workers = StringMap.remove name game.workers }
+
+let takeCityUpdate game (city,eff) =
+  match eff with
+  | Some (CityDestroyed name) ->
+    { game with cities = StringMap.remove name game.cities }
+  | Some (SpawnWorker w) ->
+    { game with
+      cities = StringUpdateMap.go city.name (fun _ -> Some city) game.cities
+    ; workers = StringMap.add w.name w game.workers
+    }
+  | _ ->
+    { game with
+      cities = StringUpdateMap.go city.name (fun _ -> Some city) game.cities
+    }
 
 let oneFrame game ts =
   let realTime = ts -. game.startTime in
@@ -74,11 +110,23 @@ let oneFrame game ts =
     ; timeOfDay = timeOfDay
     }
   in
-  let cityRes = game.cities |> List.map (runCity game timeInc) in
-  let updCities = cityRes |> List.map (fun (c,_) -> c) in
-  let cityEffects = cityRes |> List.map (fun (_,e) -> e) |> catOptions in
-  let game = cityEffects |> List.fold_left takeCityEffect { game with cities = updCities } in
-  if List.length game.cities == 0 then
+  (* Run workers *)
+  let workerRes =
+    game.workers
+    |> StringMap.bindings
+    |> List.map (fun (_,w) -> w)
+    |> List.map (WorkerMethods.runWorker game timeInc)
+  in
+  let game = List.fold_left takeWorkerResults game workerRes in
+  (* Run cities *)
+  let cityRes =
+    game.cities
+    |> StringMap.bindings
+    |> List.map (fun (_,c) -> c)
+    |> List.map (runCity game timeInc)
+  in
+  let game = List.fold_left takeCityUpdate game cityRes in
+  if StringMap.cardinal game.cities == 0 then
     { game with mode = GameOverScreen (game.realTime +. gameOverTime) }
   else
     game

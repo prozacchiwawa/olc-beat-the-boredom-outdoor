@@ -1,5 +1,6 @@
 open Contypes
 open Constants
+open Knowledge
 open Weather
 open Tod
 open City
@@ -25,6 +26,19 @@ type gamestate =
   ; world : Perlin.ground
   ; paused : bool
   ; keys : StringSet.t
-  ; cities : city list
-  ; workers : worker list
+  ; cities : city StringMap.t
+  ; workers : worker StringMap.t
+  ; known : know IPointMap.t
+  ; plants : IPointSet.t
   }
+
+let locateCityNamed gamestate name =
+  try
+    let city = StringMap.find name gamestate.cities in
+    Some (city.x, city.y)
+  with _ ->
+    None
+
+let locationOfWorkerTarget gamestate = function
+  | Worker.TargetCoords pt -> Some pt
+  | Worker.TargetEntity name -> locateCityNamed gamestate name

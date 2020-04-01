@@ -50,6 +50,16 @@ let optionThen f o =
   | Some v -> f v
   | _ -> None
 
+let optionOrElse f o =
+  match o with
+  | Some v -> Some v
+  | _ -> f ()
+
+let optionElse f o =
+  match o with
+  | Some v -> v
+  | _ -> f ()
+
 let rec catOptions =
   function
   | [] -> []
@@ -65,6 +75,13 @@ module StringOrd = struct
   let compare a b = Pervasives.compare a b
 end
 
+module IPointOrd = struct
+  type t = int * int
+  let compare a b = Pervasives.compare a b
+end
+
 module StringSet = Set.Make(StringOrd)
 module StringMap = Map.Make(StringOrd)
-
+module StringUpdateMap = UpdateMap(StringOrd)
+module IPointSet = Set.Make(IPointOrd)
+module IPointMap = Map.Make(IPointOrd)

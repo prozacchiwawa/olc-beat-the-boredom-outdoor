@@ -7,8 +7,12 @@
   
 - Each map space is in a biome based on color.
 
-- When a city falls to 0.5 population, 0.125 population is added to two other cities.
-- When two cities have 1.5 population, a new city is founded at 1.0 population.
+- When a city falls to 0.5 population, 0.125 population is added to up to two other cities and
+  the city falls to ruin.
+- When two cities have 1.5 population, a new city is founded at 0.9 population.
+- When you have one city and it achieves 2.0 population, a new city is founded at 0.8 
+  population.
+
 - Cities can be anywhere, you start with 4
 
 - Travelling from one map space to the next involves randomly overcoming challenges based on

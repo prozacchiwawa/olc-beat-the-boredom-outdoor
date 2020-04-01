@@ -1,3 +1,4 @@
+open Contypes
 open Color
 open Canvas
 open Allstate
@@ -56,6 +57,34 @@ let drawMapScreen state =
       0 0 state.spec.width state.spec.height
       0 0 state.spec.width state.spec.height
   in
+  (* Draw cities *)
+  let _ =
+    state.game.cities |> StringMap.bindings |> List.iter
+      (fun (_, (c : City.city)) ->
+         let (cx,cy) = worldPositionToScreen state (float_of_int c.x) (float_of_int c.y) in
+         Sprite.drawSpriteCenter
+           state.spec
+           (if c.ruin != 0.0 then SpriteDefs.ruinSprite else SpriteDefs.citySprite)
+           cx
+           cy
+           (SpriteDefs.citySprite.width * 2)
+           (SpriteDefs.citySprite.height * 2)
+      )
+  in
+  (* Draw workers *)
+  let _ =
+    state.game.workers |> StringMap.bindings |> List.iter
+      (fun (_, (w : Worker.worker)) ->
+         let (wx,wy) = worldPositionToScreen state w.x w.y in
+         Sprite.drawSpriteCenter
+           state.spec
+           (if w.death > 0.0 then SpriteDefs.deadWorkerSprite else SpriteDefs.workerSprite)
+           wx
+           wy
+           (SpriteDefs.workerSprite.width * 2)
+           (SpriteDefs.workerSprite.height * 2)
+      )
+  in
   (* Draw player *)
   let (px,py) = worldPositionToScreen state state.game.player.x state.game.player.y in
   let _ =
@@ -67,19 +96,7 @@ let drawMapScreen state =
       (SpriteDefs.playerSprite.width * 2)
       (SpriteDefs.playerSprite.height * 2)
   in
-  (* Draw cities *)
-  state.game.cities |> List.iter
-    (fun (c : City.city) ->
-       let (cx,cy) = worldPositionToScreen state (float_of_int c.x) (float_of_int c.y) in
-       Sprite.drawSpriteCenter
-         state.spec
-         (if c.ruin != 0.0 then SpriteDefs.ruinSprite else SpriteDefs.citySprite)
-         cx
-         cy
-         (SpriteDefs.citySprite.width * 2)
-         (SpriteDefs.citySprite.height * 2)
-    )
-
+  ()
 let drawHud state =
   let str =
     if state.game.paused then
