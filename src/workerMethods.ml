@@ -19,10 +19,12 @@ let newWorker (city : city) tgt =
   }
 
 let moveToward incT (tx,ty) worker =
-  let diffX = (float_of_int tx) -. worker.x in
-  let moveX = diffX /. (Math.abs diffX) in
-  let diffY = (float_of_int ty) -. worker.y in
-  let moveY = diffY /. (Math.abs diffY) in
+  let diffX = ((float_of_int tx) +. 0.5) -. worker.x in
+  let adx = Math.abs diffX in
+  let moveX = diffX /. adx in
+  let diffY = ((float_of_int ty) +. 0.5) -. worker.y in
+  let ady = Math.abs diffY in
+  let moveY = diffY /. ady in
   { worker with
     x = worker.x +. (incT *. moveX *. workerMoveRate)
   ; y = worker.y +. (incT *. moveY *. workerMoveRate)

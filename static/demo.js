@@ -21953,10 +21953,12 @@ function newWorker(city, tgt) {
 }
 
 function moveToward(incT, param, worker) {
-  var diffX = param[0] - worker.x;
-  var moveX = diffX / Math.abs(diffX);
-  var diffY = param[1] - worker.y;
-  var moveY = diffY / Math.abs(diffY);
+  var diffX = param[0] + 0.5 - worker.x;
+  var adx = Math.abs(diffX);
+  var moveX = diffX / adx;
+  var diffY = param[1] + 0.5 - worker.y;
+  var ady = Math.abs(diffY);
+  var moveY = diffY / ady;
   return {
           name: worker.name,
           x: worker.x + incT * moveX * 4.0,
