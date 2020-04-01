@@ -1,5 +1,7 @@
 open Worker
 
+let workerPop = 10.0
+
 type runCityEffect
   = CityDestroyed of string
   | SpawnWorker of worker

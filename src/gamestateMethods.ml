@@ -68,7 +68,8 @@ let addWorkerProduct game w =
         StringMap.add
           city.name
           { city with
-            food = city.food +. w.food
+            population = city.population +. City.workerPop
+          ; food = city.food +. w.food
           ; minerals = city.minerals +. w.minerals
           }
           game.cities

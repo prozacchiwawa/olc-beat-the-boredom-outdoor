@@ -56,7 +56,7 @@ let spawnWorker gamestate city : (city * worker option) =
   match Math.randomlyChooseInOrder 0.5 @@ getAdvantageousOutings gamestate city with
   | Some (f, tgt) ->
     let updated =
-      { city with population = city.population -. 10.0 }
+      { city with population = city.population -. City.workerPop }
     in
     let worker = f (WorkerMethods.newWorker city tgt) in
     let _ = Js.log worker in
