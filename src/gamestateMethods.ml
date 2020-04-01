@@ -14,7 +14,8 @@ let newGame world =
   let startInstant = Time.getTime startT in
   let player = newPlayer () in
   { startTime = startInstant
-  ; realTime = startInstant
+  ; realTime = 0.0
+  ; lastTs = startInstant
   ; worldTime = 0.0
   ; timeOfDay = 0.0
   ; gameSpeed = 12.0 (* Days per second *)
@@ -22,7 +23,6 @@ let newGame world =
   ; mode = HomeScreen
   ; weather = Clear
   ; world = world
-  ; paused = true
   ; keys = StringSet.empty
   ; cities = StringMap.empty
   ; workers = StringMap.empty
@@ -55,7 +55,7 @@ let generateStartCities game =
   }
 
 let startGame game =
-  { game with mode = MapScreen }
+  { game with mode = MapScreen Running }
   |> generateStartCities
 
 let gameOverTime = 5000.0
@@ -92,7 +92,7 @@ let takeCityUpdate game (city,eff) =
     }
 
 let oneFrame game ts =
-  let realTime = ts -. game.startTime in
+  let realTime = game.realTime +. ts in
   let worldTime = realTime /. (game.gameSpeed *. 1000.0) in
   let timeOfDay = timeOfDayFromWorldTime worldTime in
   let timeInc = worldTime -. game.worldTime in
@@ -103,6 +103,9 @@ let oneFrame game ts =
     ; timeOfDay = timeOfDay
     }
   in
+  (* Run player *)
+  let playerRes = PlayerMethods.moveCloserToTarget game timeInc game.player in
+  let game = { game with player = playerRes } in
   (* Run workers *)
   let workerRes =
     game.workers
@@ -127,23 +130,66 @@ let oneFrame game ts =
 let runGame game' keys ts =
   let newlyPressed = StringSet.diff keys game'.keys in
   let spacePressed = StringSet.mem " " newlyPressed in
-  let game'' = { game' with keys = keys } in
-  match game''.mode with
+  let downPressed = StringSet.mem "ARROWDOWN" newlyPressed in
+  let upPressed = StringSet.mem "ARROWUP" newlyPressed in
+  let leftPressed = StringSet.mem "ARROWLEFT" newlyPressed in
+  let rightPressed = StringSet.mem "ARROWRIGHT" newlyPressed in
+  let lastTs = game'.lastTs in
+  let game = { game' with keys = keys ; lastTs = ts } in
+  match game.mode with
   | HomeScreen ->
     if spacePressed then
-      startGame game''
+      startGame game
     else
-      game''
+      game
   | GameOverScreen endGameOver ->
-    let realTime = ts -. game''.startTime in
+    let realTime = game.realTime +. (ts -. lastTs) in
     if realTime > endGameOver then
-      { game'' with mode = HomeScreen }
+      { game with mode = HomeScreen ; realTime = realTime }
     else
-      game''
-  | _ ->
-    let paused = if spacePressed then not game''.paused else game''.paused in
-    let gameWithPause = { game'' with paused = paused } in
-    if paused then
-      gameWithPause
+      game
+  | MapScreen (PauseMenu choice) ->
+    if spacePressed then
+      match choice with
+      | Resume -> { game with mode = MapScreen Running }
+      | ChooseLocation ->
+        { game with
+          mode =
+            MapScreen
+              (ChoosingLocation (int_of_float game.player.x, int_of_float game.player.y))
+        }
+      | Encounter -> { game with mode = FirstPerson }
+      | Camp -> { game with mode = CampScreen }
+    else if downPressed then
+      { game with mode = MapScreen (PauseMenu (Math.nextOf choice menuChoices)) }
+    else if upPressed then
+      { game with mode = MapScreen (PauseMenu (Math.prevOf choice menuChoices)) }
     else
-      oneFrame gameWithPause ts
+      game
+  | MapScreen (ChoosingLocation (lx,ly)) ->
+    if spacePressed then
+      { game with
+        player = PlayerMethods.setTargetLocation (lx,ly) game.player ;
+        mode = MapScreen Running
+      }
+    else
+      let diffY = if upPressed then -1 else if downPressed then 1 else 0 in
+      let diffX = if leftPressed then -1 else if rightPressed then 1 else 0 in
+      let newLX = min (worldSide - 1) (max (lx + diffX) 0) in
+      let newLY = min (worldSide - 1) (max (ly + diffY) 0) in
+      { game with mode = MapScreen (ChoosingLocation (newLX,newLY)) }
+  | MapScreen Running ->
+    if spacePressed then
+      { game with mode = MapScreen (PauseMenu Resume) }
+    else
+      oneFrame game (ts -. lastTs)
+  | CampScreen ->
+    if spacePressed then
+      { game with mode = MapScreen Running }
+    else
+      game
+  | FirstPerson ->
+    if spacePressed then
+      { game with mode = MapScreen Running}
+    else
+      game

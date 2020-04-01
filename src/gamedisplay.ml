@@ -43,9 +43,13 @@ let drawFirstPersonBackdrop state =
 let unimplementedStr = "Unimplemented"
 
 let worldPositionToScreen state x y =
-  let xx = (int_of_float x) * state.spec.width / state.game.world.groundX in
-  let yy = (int_of_float y) * state.spec.height / state.game.world.groundY in
-  (xx,yy)
+  let xx =
+    ((Math.floor x) +. 0.5) *. (float_of_int state.spec.width) /. (float_of_int state.game.world.groundX)
+  in
+  let yy =
+    ((Math.floor y) +. 0.5) *. (float_of_int state.spec.height) /. (float_of_int state.game.world.groundY)
+  in
+  (int_of_float xx,int_of_float yy)
 
 let drawMapScreen state =
   let ctx = state.spec.context2d in
@@ -97,19 +101,50 @@ let drawMapScreen state =
       (SpriteDefs.playerSprite.height * 2)
   in
   ()
-let drawHud state =
-  let str =
-    if state.game.paused then
-      Printf.sprintf "[PAUSE] TOD %f" state.game.timeOfDay
-    else
-      Printf.sprintf "[~RUN~] TOD %f" state.game.timeOfDay
-  in
+
+let drawUpperRightStatus state str =
   let metrics = measureText state.spec.context2d str in
   let width = getMeasureWidth metrics |> int_of_float in
   let ascent = getFontBBAscent metrics |> int_of_float in
   let xAt = state.spec.width - width in
   let _ = setFillStyle state.spec.context2d @@ fillStyleOfString "white" in
   fillText state.spec.context2d str (xAt - 10) (ascent + 10)
+
+let drawHud state =
+  match state.game.mode with
+  | MapScreen Running ->
+    drawUpperRightStatus state "Running"
+  | MapScreen (ChoosingLocation (x,y)) ->
+    let _ =
+      let (cx,cy) =
+        worldPositionToScreen state (float_of_int x) (float_of_int y)
+      in
+      Sprite.drawSpriteCenter
+        state.spec
+        SpriteDefs.targetSprite
+        cx
+        cy
+        (SpriteDefs.targetSprite.width * 2)
+        (SpriteDefs.targetSprite.height * 2)
+    in
+    drawUpperRightStatus state @@ Printf.sprintf "Choose location (%d,%d)" x y
+  | MapScreen (PauseMenu choice) ->
+    let choiceColor ch = if ch = choice then "yellow" else "white" in
+    let _ =
+      Menu.drawMenu state.spec
+        [ { color = choiceColor Resume         ; str = "Resume" }
+        ; { color = choiceColor ChooseLocation ; str = "Change Target" }
+        ; { color = choiceColor Encounter      ; str = "Hard Travel" }
+        ; { color = choiceColor Camp           ; str = "Camp" }
+        ]
+    in
+    drawUpperRightStatus state "Select..."
+  | HomeScreen -> ()
+  | GameOverScreen _ -> ()
+  | CampScreen ->
+    drawUpperRightStatus state "Camp"
+  | FirstPerson ->
+    drawUpperRightStatus state "First Person"
 
 let displayScreen state =
   match state.game.mode with
@@ -122,7 +157,7 @@ let displayScreen state =
   | Gamestate.GameOverScreen _ ->
     Menu.drawMenu state.spec
       [ { color = "red" ; str = "Game Over" } ]
-  | Gamestate.MapScreen ->
+  | Gamestate.MapScreen _ ->
     let _ = drawMapScreen state in
     drawHud state
   | Gamestate.CampScreen ->

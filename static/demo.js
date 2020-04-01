@@ -17519,7 +17519,7 @@ function addWorkerProduct(w, city) {
 }
 
 function workerProb(city) {
-  return Caml_primitive.caml_float_min(0.01, 1.0 * (city.population / city.food));
+  return Caml_primitive.caml_float_max(0.01, 0.7 * (city.population / city.food));
 }
 
 function rankResource(city, param, param$1) {
@@ -17686,22 +17686,24 @@ function runCity(gamestate, incT, city) {
     }
   } else if (city.ruin === 0.0) {
     var updatedFood = city.food - city.population * 0.33 * incT;
+    var updatedPop = updatedFood > city.population + 1.25 ? city.population + city.population * 0.1 : city.population;
     var cityWithFood_x = city.x;
     var cityWithFood_y = city.y;
     var cityWithFood_ruin = city.ruin;
     var cityWithFood_name = city.name;
-    var cityWithFood_population = city.population;
     var cityWithFood_minerals = city.minerals;
     var cityWithFood = {
       x: cityWithFood_x,
       y: cityWithFood_y,
       ruin: cityWithFood_ruin,
       name: cityWithFood_name,
-      population: cityWithFood_population,
+      population: updatedPop,
       minerals: cityWithFood_minerals,
       food: updatedFood
     };
-    var trySpawnWorker = workerProb(city) < Math.random() / incT;
+    var prob = workerProb(city);
+    var rnd = Math.random() / incT;
+    var trySpawnWorker = prob > rnd;
     var canSpawnWorker = city.population >= 20.0 && city.food >= 5.0;
     if (updatedFood < 0.0) {
       console.log(Curry._1(Printf.sprintf(/* Format */[
@@ -17720,7 +17722,7 @@ function runCity(gamestate, incT, city) {
                 y: cityWithFood_y,
                 ruin: 1.0,
                 name: cityWithFood_name,
-                population: cityWithFood_population,
+                population: updatedPop,
                 minerals: cityWithFood_minerals,
                 food: updatedFood
               },
@@ -17730,6 +17732,44 @@ function runCity(gamestate, incT, city) {
       var match = spawnWorker(gamestate, cityWithFood);
       var worker = match[1];
       var city$1 = match[0];
+      console.log(Curry._4(Printf.sprintf(/* Format */[
+                    /* String_literal */Block.__(11, [
+                        "Spawn worker prob ",
+                        /* Float */Block.__(8, [
+                            /* Float_f */0,
+                            /* No_padding */0,
+                            /* No_precision */0,
+                            /* String_literal */Block.__(11, [
+                                " rnd ",
+                                /* Float */Block.__(8, [
+                                    /* Float_f */0,
+                                    /* No_padding */0,
+                                    /* No_precision */0,
+                                    /* String_literal */Block.__(11, [
+                                        " pop ",
+                                        /* Float */Block.__(8, [
+                                            /* Float_f */0,
+                                            /* No_padding */0,
+                                            /* No_precision */0,
+                                            /* String_literal */Block.__(11, [
+                                                " food ",
+                                                /* Float */Block.__(8, [
+                                                    /* Float_f */0,
+                                                    /* No_padding */0,
+                                                    /* No_precision */0,
+                                                    /* End_of_format */0
+                                                  ])
+                                              ])
+                                          ])
+                                      ])
+                                  ])
+                              ])
+                          ])
+                      ]),
+                    "Spawn worker prob %f rnd %f pop %f food %f"
+                  ]), prob, rnd, city$1.population, city$1.food));
+      console.log(city$1);
+      console.log(worker);
       if (worker !== undefined) {
         return /* tuple */[
                 city$1,
@@ -17759,7 +17799,7 @@ var cityRuinTime = 1.0;
 
 var eatingRate = 0.33;
 
-var workerProbFactor = 1.0;
+var workerProbFactor = 0.7;
 
 exports.cityRuinTime = cityRuinTime;
 exports.eatingRate = eatingRate;
@@ -17773,7 +17813,7 @@ exports.whatWeKnowToTarget = whatWeKnowToTarget;
 exports.getAdvantageousOutings = getAdvantageousOutings;
 exports.spawnWorker = spawnWorker;
 exports.runCity = runCity;
-/* Contypes Not a pure module */
+/* Math Not a pure module */
 
 },{"./city.bs.js":34,"./contypes.bs.js":38,"./math.bs.js":45,"./workerMethods.bs.js":55,"bs-platform/lib/js/block.js":2,"bs-platform/lib/js/caml_array.js":5,"bs-platform/lib/js/caml_primitive.js":17,"bs-platform/lib/js/curry.js":24,"bs-platform/lib/js/list.js":25,"bs-platform/lib/js/printf.js":28}],36:[function(require,module,exports){
 // Generated by BUCKLESCRIPT, PLEASE EDIT WITH CARE
@@ -18963,11 +19003,11 @@ function drawFirstPersonBackdrop(state) {
 }
 
 function worldPositionToScreen(state, x, y) {
-  var xx = Caml_int32.div(Caml_int32.imul(x | 0, state.spec.width), state.game.world.groundX);
-  var yy = Caml_int32.div(Caml_int32.imul(y | 0, state.spec.height), state.game.world.groundY);
+  var xx = (Math.floor(x) + 0.5) * state.spec.width / state.game.world.groundX;
+  var yy = (Math.floor(y) + 0.5) * state.spec.height / state.game.world.groundY;
   return /* tuple */[
-          xx,
-          yy
+          xx | 0,
+          yy | 0
         ];
 }
 
@@ -18990,30 +19030,7 @@ function drawMapScreen(state) {
   return /* () */0;
 }
 
-function drawHud(state) {
-  var str = state.game.paused ? Curry._1(Printf.sprintf(/* Format */[
-              /* String_literal */Block.__(11, [
-                  "[PAUSE] TOD ",
-                  /* Float */Block.__(8, [
-                      /* Float_f */0,
-                      /* No_padding */0,
-                      /* No_precision */0,
-                      /* End_of_format */0
-                    ])
-                ]),
-              "[PAUSE] TOD %f"
-            ]), state.game.timeOfDay) : Curry._1(Printf.sprintf(/* Format */[
-              /* String_literal */Block.__(11, [
-                  "[~RUN~] TOD ",
-                  /* Float */Block.__(8, [
-                      /* Float_f */0,
-                      /* No_padding */0,
-                      /* No_precision */0,
-                      /* End_of_format */0
-                    ])
-                ]),
-              "[~RUN~] TOD %f"
-            ]), state.game.timeOfDay);
+function drawUpperRightStatus(state, str) {
   var metrics = state.spec.context2d.measureText(str);
   var width = metrics.width | 0;
   var ascent = metrics.actualBoundingBoxAscent | 0;
@@ -19021,6 +19038,85 @@ function drawHud(state) {
   state.spec.context2d.fillStyle = Curry._1(Canvas.fillStyleOfString, "white");
   state.spec.context2d.fillText(str, xAt - 10 | 0, ascent + 10 | 0);
   return /* () */0;
+}
+
+function drawHud(state) {
+  var match = state.game.mode;
+  if (typeof match === "number") {
+    switch (match) {
+      case /* HomeScreen */0 :
+          return /* () */0;
+      case /* CampScreen */1 :
+          return drawUpperRightStatus(state, "Camp");
+      case /* FirstPerson */2 :
+          return drawUpperRightStatus(state, "First Person");
+      
+    }
+  } else if (match.tag) {
+    var match$1 = match[0];
+    if (typeof match$1 === "number") {
+      return drawUpperRightStatus(state, "Running");
+    } else if (match$1.tag) {
+      var choice = match$1[0];
+      Menu.drawMenu(state.spec, /* :: */[
+            {
+              color: /* Resume */0 === choice ? "yellow" : "white",
+              str: "Resume"
+            },
+            /* :: */[
+              {
+                color: /* ChooseLocation */1 === choice ? "yellow" : "white",
+                str: "Change Target"
+              },
+              /* :: */[
+                {
+                  color: /* Encounter */2 === choice ? "yellow" : "white",
+                  str: "Hard Travel"
+                },
+                /* :: */[
+                  {
+                    color: /* Camp */3 === choice ? "yellow" : "white",
+                    str: "Camp"
+                  },
+                  /* [] */0
+                ]
+              ]
+            ]
+          ]);
+      return drawUpperRightStatus(state, "Select...");
+    } else {
+      var match$2 = match$1[0];
+      var y = match$2[1];
+      var x = match$2[0];
+      var match$3 = worldPositionToScreen(state, x, y);
+      Sprite.drawSpriteCenter(state.spec, SpriteDefs.targetSprite, match$3[0], match$3[1], (SpriteDefs.targetSprite.width << 1), (SpriteDefs.targetSprite.height << 1));
+      return drawUpperRightStatus(state, Curry._2(Printf.sprintf(/* Format */[
+                          /* String_literal */Block.__(11, [
+                              "Choose location (",
+                              /* Int */Block.__(4, [
+                                  /* Int_d */0,
+                                  /* No_padding */0,
+                                  /* No_precision */0,
+                                  /* Char_literal */Block.__(12, [
+                                      /* "," */44,
+                                      /* Int */Block.__(4, [
+                                          /* Int_d */0,
+                                          /* No_padding */0,
+                                          /* No_precision */0,
+                                          /* Char_literal */Block.__(12, [
+                                              /* ")" */41,
+                                              /* End_of_format */0
+                                            ])
+                                        ])
+                                    ])
+                                ])
+                            ]),
+                          "Choose location (%d,%d)"
+                        ]), x, y));
+    }
+  } else {
+    return /* () */0;
+  }
 }
 
 function displayScreen(state) {
@@ -19032,11 +19128,11 @@ function displayScreen(state) {
           var sunnyGame_startTime = theGame.startTime;
           var sunnyGame_worldTime = theGame.worldTime;
           var sunnyGame_realTime = theGame.realTime;
+          var sunnyGame_lastTs = theGame.lastTs;
           var sunnyGame_gameSpeed = theGame.gameSpeed;
           var sunnyGame_player = theGame.player;
           var sunnyGame_mode = theGame.mode;
           var sunnyGame_world = theGame.world;
-          var sunnyGame_paused = theGame.paused;
           var sunnyGame_keys = theGame.keys;
           var sunnyGame_cities = theGame.cities;
           var sunnyGame_workers = theGame.workers;
@@ -19046,13 +19142,13 @@ function displayScreen(state) {
             startTime: sunnyGame_startTime,
             worldTime: sunnyGame_worldTime,
             realTime: sunnyGame_realTime,
+            lastTs: sunnyGame_lastTs,
             timeOfDay: 0.5,
             gameSpeed: sunnyGame_gameSpeed,
             player: sunnyGame_player,
             mode: sunnyGame_mode,
             weather: /* Clear */0,
             world: sunnyGame_world,
-            paused: sunnyGame_paused,
             keys: sunnyGame_keys,
             cities: sunnyGame_cities,
             workers: sunnyGame_workers,
@@ -19074,10 +19170,7 @@ function displayScreen(state) {
                       },
                       /* [] */0
                     ]);
-      case /* MapScreen */1 :
-          drawMapScreen(state);
-          return drawHud(state);
-      case /* CampScreen */2 :
+      case /* CampScreen */1 :
           drawFirstPersonBackdrop(state);
           drawHud(state);
           return Menu.drawMenu(state.spec, /* :: */[
@@ -19087,11 +19180,14 @@ function displayScreen(state) {
                       },
                       /* [] */0
                     ]);
-      case /* FirstPerson */3 :
+      case /* FirstPerson */2 :
           drawFirstPersonBackdrop(state);
           return drawHud(state);
       
     }
+  } else if (match.tag) {
+    drawMapScreen(state);
+    return drawHud(state);
   } else {
     return Menu.drawMenu(state.spec, /* :: */[
                 {
@@ -19111,6 +19207,7 @@ exports.drawFirstPersonBackdrop = drawFirstPersonBackdrop;
 exports.unimplementedStr = unimplementedStr;
 exports.worldPositionToScreen = worldPositionToScreen;
 exports.drawMapScreen = drawMapScreen;
+exports.drawUpperRightStatus = drawUpperRightStatus;
 exports.drawHud = drawHud;
 exports.displayScreen = displayScreen;
 /* Menu Not a pure module */
@@ -19791,6 +19888,21 @@ function locationOfWorkerTarget(gamestate, param) {
   }
 }
 
+var menuChoices = /* :: */[
+  /* Resume */0,
+  /* :: */[
+    /* ChooseLocation */1,
+    /* :: */[
+      /* Encounter */2,
+      /* :: */[
+        /* Camp */3,
+        /* [] */0
+      ]
+    ]
+  ]
+];
+
+exports.menuChoices = menuChoices;
 exports.locateCityNamed = locateCityNamed;
 exports.locationOfWorkerTarget = locationOfWorkerTarget;
 /* Contypes Not a pure module */
@@ -19801,14 +19913,18 @@ exports.locationOfWorkerTarget = locationOfWorkerTarget;
 
 var Tod = require("./tod.bs.js");
 var List = require("bs-platform/lib/js/list.js");
+var $$Math = require("./math.bs.js");
 var $$Array = require("bs-platform/lib/js/array.js");
+var Block = require("bs-platform/lib/js/block.js");
 var Curry = require("bs-platform/lib/js/curry.js");
 var Namegen = require("./namegen.bs.js");
 var Contypes = require("./contypes.bs.js");
 var Constants = require("./constants.bs.js");
+var Gamestate = require("./gamestate.bs.js");
 var CityMethods = require("./cityMethods.bs.js");
 var PlayerMethods = require("./playerMethods.bs.js");
 var WorkerMethods = require("./workerMethods.bs.js");
+var Caml_primitive = require("bs-platform/lib/js/caml_primitive.js");
 
 function newGame(world) {
   var startT = new Date();
@@ -19817,14 +19933,14 @@ function newGame(world) {
   return {
           startTime: startInstant,
           worldTime: 0.0,
-          realTime: startInstant,
+          realTime: 0.0,
+          lastTs: startInstant,
           timeOfDay: 0.0,
           gameSpeed: 12.0,
           player: player,
           mode: /* HomeScreen */0,
           weather: /* Clear */0,
           world: world,
-          paused: true,
           keys: Contypes.StringSet.empty,
           cities: Contypes.StringMap.empty,
           workers: Contypes.StringMap.empty,
@@ -19851,13 +19967,13 @@ function generateStartCities(game) {
           startTime: game.startTime,
           worldTime: game.worldTime,
           realTime: game.realTime,
+          lastTs: game.lastTs,
           timeOfDay: game.timeOfDay,
           gameSpeed: game.gameSpeed,
           player: game.player,
           mode: game.mode,
           weather: game.weather,
           world: game.world,
-          paused: game.paused,
           keys: game.keys,
           cities: $$Array.fold_left((function (m, c) {
                   return Curry._3(Contypes.StringMap.add, c.name, c, m);
@@ -19873,13 +19989,13 @@ function startGame(game) {
               startTime: game.startTime,
               worldTime: game.worldTime,
               realTime: game.realTime,
+              lastTs: game.lastTs,
               timeOfDay: game.timeOfDay,
               gameSpeed: game.gameSpeed,
               player: game.player,
-              mode: /* MapScreen */1,
+              mode: /* MapScreen */Block.__(1, [/* Running */0]),
               weather: game.weather,
               world: game.world,
-              paused: game.paused,
               keys: game.keys,
               cities: game.cities,
               workers: game.workers,
@@ -19895,13 +20011,13 @@ function addWorkerProduct(game, w) {
             startTime: game.startTime,
             worldTime: game.worldTime,
             realTime: game.realTime,
+            lastTs: game.lastTs,
             timeOfDay: game.timeOfDay,
             gameSpeed: game.gameSpeed,
             player: game.player,
             mode: game.mode,
             weather: game.weather,
             world: game.world,
-            paused: game.paused,
             keys: game.keys,
             cities: Curry._3(Contypes.StringMap.add, city.name, CityMethods.addWorkerProduct(w, city), game.cities),
             workers: Curry._2(Contypes.StringMap.remove, w.name, game.workers),
@@ -19914,13 +20030,13 @@ function addWorkerProduct(game, w) {
             startTime: game.startTime,
             worldTime: game.worldTime,
             realTime: game.realTime,
+            lastTs: game.lastTs,
             timeOfDay: game.timeOfDay,
             gameSpeed: game.gameSpeed,
             player: game.player,
             mode: game.mode,
             weather: game.weather,
             world: game.world,
-            paused: game.paused,
             keys: game.keys,
             cities: game.cities,
             workers: Curry._2(Contypes.StringMap.remove, w.name, game.workers),
@@ -19938,13 +20054,13 @@ function takeWorkerResults(game, param) {
                 startTime: game.startTime,
                 worldTime: game.worldTime,
                 realTime: game.realTime,
+                lastTs: game.lastTs,
                 timeOfDay: game.timeOfDay,
                 gameSpeed: game.gameSpeed,
                 player: game.player,
                 mode: game.mode,
                 weather: game.weather,
                 world: game.world,
-                paused: game.paused,
                 keys: game.keys,
                 cities: game.cities,
                 workers: Contypes.StringUpdateMap.go(w.name, (function (param) {
@@ -19960,13 +20076,13 @@ function takeWorkerResults(game, param) {
                 startTime: game.startTime,
                 worldTime: game.worldTime,
                 realTime: game.realTime,
+                lastTs: game.lastTs,
                 timeOfDay: game.timeOfDay,
                 gameSpeed: game.gameSpeed,
                 player: game.player,
                 mode: game.mode,
                 weather: game.weather,
                 world: game.world,
-                paused: game.paused,
                 keys: game.keys,
                 cities: game.cities,
                 workers: Curry._2(Contypes.StringMap.remove, param[0], game.workers),
@@ -19988,13 +20104,13 @@ function takeCityUpdate(game, param) {
               startTime: game.startTime,
               worldTime: game.worldTime,
               realTime: game.realTime,
+              lastTs: game.lastTs,
               timeOfDay: game.timeOfDay,
               gameSpeed: game.gameSpeed,
               player: game.player,
               mode: game.mode,
               weather: game.weather,
               world: game.world,
-              paused: game.paused,
               keys: game.keys,
               cities: Contypes.StringUpdateMap.go(city.name, (function (param) {
                       return city;
@@ -20008,13 +20124,13 @@ function takeCityUpdate(game, param) {
               startTime: game.startTime,
               worldTime: game.worldTime,
               realTime: game.realTime,
+              lastTs: game.lastTs,
               timeOfDay: game.timeOfDay,
               gameSpeed: game.gameSpeed,
               player: game.player,
               mode: game.mode,
               weather: game.weather,
               world: game.world,
-              paused: game.paused,
               keys: game.keys,
               cities: Curry._2(Contypes.StringMap.remove, match[0], game.cities),
               workers: game.workers,
@@ -20027,13 +20143,13 @@ function takeCityUpdate(game, param) {
             startTime: game.startTime,
             worldTime: game.worldTime,
             realTime: game.realTime,
+            lastTs: game.lastTs,
             timeOfDay: game.timeOfDay,
             gameSpeed: game.gameSpeed,
             player: game.player,
             mode: game.mode,
             weather: game.weather,
             world: game.world,
-            paused: game.paused,
             keys: game.keys,
             cities: Contypes.StringUpdateMap.go(city.name, (function (param) {
                     return city;
@@ -20046,17 +20162,17 @@ function takeCityUpdate(game, param) {
 }
 
 function oneFrame(game, ts) {
-  var realTime = ts - game.startTime;
+  var realTime = game.realTime + ts;
   var worldTime = realTime / (game.gameSpeed * 1000.0);
   var timeOfDay = Tod.timeOfDayFromWorldTime(worldTime);
   var timeInc = worldTime - game.worldTime;
   var game_startTime = game.startTime;
+  var game_lastTs = game.lastTs;
   var game_gameSpeed = game.gameSpeed;
   var game_player = game.player;
   var game_mode = game.mode;
   var game_weather = game.weather;
   var game_world = game.world;
-  var game_paused = game.paused;
   var game_keys = game.keys;
   var game_cities = game.cities;
   var game_workers = game.workers;
@@ -20066,154 +20182,377 @@ function oneFrame(game, ts) {
     startTime: game_startTime,
     worldTime: worldTime,
     realTime: realTime,
+    lastTs: game_lastTs,
     timeOfDay: timeOfDay,
     gameSpeed: game_gameSpeed,
     player: game_player,
     mode: game_mode,
     weather: game_weather,
     world: game_world,
-    paused: game_paused,
     keys: game_keys,
     cities: game_cities,
     workers: game_workers,
     known: game_known,
     plants: game_plants
   };
+  var playerRes = PlayerMethods.moveCloserToTarget(game$1, timeInc, game_player);
+  var game_startTime$1 = game_startTime;
+  var game_lastTs$1 = game_lastTs;
+  var game_gameSpeed$1 = game_gameSpeed;
+  var game_mode$1 = game_mode;
+  var game_weather$1 = game_weather;
+  var game_world$1 = game_world;
+  var game_keys$1 = game_keys;
+  var game_cities$1 = game_cities;
+  var game_workers$1 = game_workers;
+  var game_known$1 = game_known;
+  var game_plants$1 = game_plants;
+  var game$2 = {
+    startTime: game_startTime$1,
+    worldTime: worldTime,
+    realTime: realTime,
+    lastTs: game_lastTs$1,
+    timeOfDay: timeOfDay,
+    gameSpeed: game_gameSpeed$1,
+    player: playerRes,
+    mode: game_mode$1,
+    weather: game_weather$1,
+    world: game_world$1,
+    keys: game_keys$1,
+    cities: game_cities$1,
+    workers: game_workers$1,
+    known: game_known$1,
+    plants: game_plants$1
+  };
   var workerRes = List.map((function (param) {
-          return WorkerMethods.runWorker(game$1, timeInc, param);
+          return WorkerMethods.runWorker(game$2, timeInc, param);
         }), List.map((function (param) {
               return param[1];
-            }), Curry._1(Contypes.StringMap.bindings, game_workers)));
-  var game$2 = List.fold_left(takeWorkerResults, game$1, workerRes);
+            }), Curry._1(Contypes.StringMap.bindings, game_workers$1)));
+  var game$3 = List.fold_left(takeWorkerResults, game$2, workerRes);
   var cityRes = List.map((function (param) {
-          return CityMethods.runCity(game$2, timeInc, param);
+          return CityMethods.runCity(game$3, timeInc, param);
         }), List.map((function (param) {
               return param[1];
-            }), Curry._1(Contypes.StringMap.bindings, game$2.cities)));
-  var game$3 = List.fold_left(takeCityUpdate, game$2, cityRes);
-  if (Curry._1(Contypes.StringMap.cardinal, game$3.cities) === 0) {
+            }), Curry._1(Contypes.StringMap.bindings, game$3.cities)));
+  var game$4 = List.fold_left(takeCityUpdate, game$3, cityRes);
+  if (Curry._1(Contypes.StringMap.cardinal, game$4.cities) === 0) {
     return {
-            startTime: game$3.startTime,
-            worldTime: game$3.worldTime,
-            realTime: game$3.realTime,
-            timeOfDay: game$3.timeOfDay,
-            gameSpeed: game$3.gameSpeed,
-            player: game$3.player,
-            mode: /* GameOverScreen */[game$3.realTime + 5000.0],
-            weather: game$3.weather,
-            world: game$3.world,
-            paused: game$3.paused,
-            keys: game$3.keys,
-            cities: game$3.cities,
-            workers: game$3.workers,
-            known: game$3.known,
-            plants: game$3.plants
+            startTime: game$4.startTime,
+            worldTime: game$4.worldTime,
+            realTime: game$4.realTime,
+            lastTs: game$4.lastTs,
+            timeOfDay: game$4.timeOfDay,
+            gameSpeed: game$4.gameSpeed,
+            player: game$4.player,
+            mode: /* GameOverScreen */Block.__(0, [game$4.realTime + 5000.0]),
+            weather: game$4.weather,
+            world: game$4.world,
+            keys: game$4.keys,
+            cities: game$4.cities,
+            workers: game$4.workers,
+            known: game$4.known,
+            plants: game$4.plants
           };
   } else {
-    return game$3;
+    return game$4;
   }
 }
 
 function runGame(game$prime, keys, ts) {
   var newlyPressed = Curry._2(Contypes.StringSet.diff, keys, game$prime.keys);
   var spacePressed = Curry._2(Contypes.StringSet.mem, " ", newlyPressed);
-  var game$prime$prime_startTime = game$prime.startTime;
-  var game$prime$prime_worldTime = game$prime.worldTime;
-  var game$prime$prime_realTime = game$prime.realTime;
-  var game$prime$prime_timeOfDay = game$prime.timeOfDay;
-  var game$prime$prime_gameSpeed = game$prime.gameSpeed;
-  var game$prime$prime_player = game$prime.player;
-  var game$prime$prime_mode = game$prime.mode;
-  var game$prime$prime_weather = game$prime.weather;
-  var game$prime$prime_world = game$prime.world;
-  var game$prime$prime_paused = game$prime.paused;
-  var game$prime$prime_cities = game$prime.cities;
-  var game$prime$prime_workers = game$prime.workers;
-  var game$prime$prime_known = game$prime.known;
-  var game$prime$prime_plants = game$prime.plants;
-  var game$prime$prime = {
-    startTime: game$prime$prime_startTime,
-    worldTime: game$prime$prime_worldTime,
-    realTime: game$prime$prime_realTime,
-    timeOfDay: game$prime$prime_timeOfDay,
-    gameSpeed: game$prime$prime_gameSpeed,
-    player: game$prime$prime_player,
-    mode: game$prime$prime_mode,
-    weather: game$prime$prime_weather,
-    world: game$prime$prime_world,
-    paused: game$prime$prime_paused,
+  var downPressed = Curry._2(Contypes.StringSet.mem, "ARROWDOWN", newlyPressed);
+  var upPressed = Curry._2(Contypes.StringSet.mem, "ARROWUP", newlyPressed);
+  var leftPressed = Curry._2(Contypes.StringSet.mem, "ARROWLEFT", newlyPressed);
+  var rightPressed = Curry._2(Contypes.StringSet.mem, "ARROWRIGHT", newlyPressed);
+  var lastTs = game$prime.lastTs;
+  var game_startTime = game$prime.startTime;
+  var game_worldTime = game$prime.worldTime;
+  var game_realTime = game$prime.realTime;
+  var game_timeOfDay = game$prime.timeOfDay;
+  var game_gameSpeed = game$prime.gameSpeed;
+  var game_player = game$prime.player;
+  var game_mode = game$prime.mode;
+  var game_weather = game$prime.weather;
+  var game_world = game$prime.world;
+  var game_cities = game$prime.cities;
+  var game_workers = game$prime.workers;
+  var game_known = game$prime.known;
+  var game_plants = game$prime.plants;
+  var game = {
+    startTime: game_startTime,
+    worldTime: game_worldTime,
+    realTime: game_realTime,
+    lastTs: ts,
+    timeOfDay: game_timeOfDay,
+    gameSpeed: game_gameSpeed,
+    player: game_player,
+    mode: game_mode,
+    weather: game_weather,
+    world: game_world,
     keys: keys,
-    cities: game$prime$prime_cities,
-    workers: game$prime$prime_workers,
-    known: game$prime$prime_known,
-    plants: game$prime$prime_plants
+    cities: game_cities,
+    workers: game_workers,
+    known: game_known,
+    plants: game_plants
   };
-  var match = game$prime$prime_mode;
+  var match = game_mode;
   if (typeof match === "number") {
-    if (match !== 0) {
-      var paused = spacePressed ? !game$prime$prime_paused : game$prime$prime_paused;
-      var gameWithPause_startTime = game$prime$prime_startTime;
-      var gameWithPause_worldTime = game$prime$prime_worldTime;
-      var gameWithPause_realTime = game$prime$prime_realTime;
-      var gameWithPause_timeOfDay = game$prime$prime_timeOfDay;
-      var gameWithPause_gameSpeed = game$prime$prime_gameSpeed;
-      var gameWithPause_player = game$prime$prime_player;
-      var gameWithPause_mode = game$prime$prime_mode;
-      var gameWithPause_weather = game$prime$prime_weather;
-      var gameWithPause_world = game$prime$prime_world;
-      var gameWithPause_cities = game$prime$prime_cities;
-      var gameWithPause_workers = game$prime$prime_workers;
-      var gameWithPause_known = game$prime$prime_known;
-      var gameWithPause_plants = game$prime$prime_plants;
-      var gameWithPause = {
-        startTime: gameWithPause_startTime,
-        worldTime: gameWithPause_worldTime,
-        realTime: gameWithPause_realTime,
-        timeOfDay: gameWithPause_timeOfDay,
-        gameSpeed: gameWithPause_gameSpeed,
-        player: gameWithPause_player,
-        mode: gameWithPause_mode,
-        weather: gameWithPause_weather,
-        world: gameWithPause_world,
-        paused: paused,
-        keys: keys,
-        cities: gameWithPause_cities,
-        workers: gameWithPause_workers,
-        known: gameWithPause_known,
-        plants: gameWithPause_plants
-      };
-      if (paused) {
-        return gameWithPause;
+    switch (match) {
+      case /* HomeScreen */0 :
+          if (spacePressed) {
+            return startGame(game);
+          } else {
+            return game;
+          }
+      case /* CampScreen */1 :
+      case /* FirstPerson */2 :
+          if (spacePressed) {
+            return {
+                    startTime: game_startTime,
+                    worldTime: game_worldTime,
+                    realTime: game_realTime,
+                    lastTs: ts,
+                    timeOfDay: game_timeOfDay,
+                    gameSpeed: game_gameSpeed,
+                    player: game_player,
+                    mode: /* MapScreen */Block.__(1, [/* Running */0]),
+                    weather: game_weather,
+                    world: game_world,
+                    keys: keys,
+                    cities: game_cities,
+                    workers: game_workers,
+                    known: game_known,
+                    plants: game_plants
+                  };
+          } else {
+            return game;
+          }
+      
+    }
+  } else if (match.tag) {
+    var match$1 = match[0];
+    if (typeof match$1 === "number") {
+      if (spacePressed) {
+        return {
+                startTime: game_startTime,
+                worldTime: game_worldTime,
+                realTime: game_realTime,
+                lastTs: ts,
+                timeOfDay: game_timeOfDay,
+                gameSpeed: game_gameSpeed,
+                player: game_player,
+                mode: /* MapScreen */Block.__(1, [/* PauseMenu */Block.__(1, [/* Resume */0])]),
+                weather: game_weather,
+                world: game_world,
+                keys: keys,
+                cities: game_cities,
+                workers: game_workers,
+                known: game_known,
+                plants: game_plants
+              };
       } else {
-        return oneFrame(gameWithPause, ts);
+        return oneFrame(game, ts - lastTs);
       }
-    } else if (spacePressed) {
-      return startGame(game$prime$prime);
+    } else if (match$1.tag) {
+      var choice = match$1[0];
+      if (spacePressed) {
+        switch (choice) {
+          case /* Resume */0 :
+              return {
+                      startTime: game_startTime,
+                      worldTime: game_worldTime,
+                      realTime: game_realTime,
+                      lastTs: ts,
+                      timeOfDay: game_timeOfDay,
+                      gameSpeed: game_gameSpeed,
+                      player: game_player,
+                      mode: /* MapScreen */Block.__(1, [/* Running */0]),
+                      weather: game_weather,
+                      world: game_world,
+                      keys: keys,
+                      cities: game_cities,
+                      workers: game_workers,
+                      known: game_known,
+                      plants: game_plants
+                    };
+          case /* ChooseLocation */1 :
+              return {
+                      startTime: game_startTime,
+                      worldTime: game_worldTime,
+                      realTime: game_realTime,
+                      lastTs: ts,
+                      timeOfDay: game_timeOfDay,
+                      gameSpeed: game_gameSpeed,
+                      player: game_player,
+                      mode: /* MapScreen */Block.__(1, [/* ChoosingLocation */Block.__(0, [/* tuple */[
+                                game_player.x | 0,
+                                game_player.y | 0
+                              ]])]),
+                      weather: game_weather,
+                      world: game_world,
+                      keys: keys,
+                      cities: game_cities,
+                      workers: game_workers,
+                      known: game_known,
+                      plants: game_plants
+                    };
+          case /* Encounter */2 :
+              return {
+                      startTime: game_startTime,
+                      worldTime: game_worldTime,
+                      realTime: game_realTime,
+                      lastTs: ts,
+                      timeOfDay: game_timeOfDay,
+                      gameSpeed: game_gameSpeed,
+                      player: game_player,
+                      mode: /* FirstPerson */2,
+                      weather: game_weather,
+                      world: game_world,
+                      keys: keys,
+                      cities: game_cities,
+                      workers: game_workers,
+                      known: game_known,
+                      plants: game_plants
+                    };
+          case /* Camp */3 :
+              return {
+                      startTime: game_startTime,
+                      worldTime: game_worldTime,
+                      realTime: game_realTime,
+                      lastTs: ts,
+                      timeOfDay: game_timeOfDay,
+                      gameSpeed: game_gameSpeed,
+                      player: game_player,
+                      mode: /* CampScreen */1,
+                      weather: game_weather,
+                      world: game_world,
+                      keys: keys,
+                      cities: game_cities,
+                      workers: game_workers,
+                      known: game_known,
+                      plants: game_plants
+                    };
+          
+        }
+      } else if (downPressed) {
+        return {
+                startTime: game_startTime,
+                worldTime: game_worldTime,
+                realTime: game_realTime,
+                lastTs: ts,
+                timeOfDay: game_timeOfDay,
+                gameSpeed: game_gameSpeed,
+                player: game_player,
+                mode: /* MapScreen */Block.__(1, [/* PauseMenu */Block.__(1, [$$Math.nextOf(choice, Gamestate.menuChoices)])]),
+                weather: game_weather,
+                world: game_world,
+                keys: keys,
+                cities: game_cities,
+                workers: game_workers,
+                known: game_known,
+                plants: game_plants
+              };
+      } else if (upPressed) {
+        return {
+                startTime: game_startTime,
+                worldTime: game_worldTime,
+                realTime: game_realTime,
+                lastTs: ts,
+                timeOfDay: game_timeOfDay,
+                gameSpeed: game_gameSpeed,
+                player: game_player,
+                mode: /* MapScreen */Block.__(1, [/* PauseMenu */Block.__(1, [$$Math.prevOf(choice, Gamestate.menuChoices)])]),
+                weather: game_weather,
+                world: game_world,
+                keys: keys,
+                cities: game_cities,
+                workers: game_workers,
+                known: game_known,
+                plants: game_plants
+              };
+      } else {
+        return game;
+      }
     } else {
-      return game$prime$prime;
+      var match$2 = match$1[0];
+      var ly = match$2[1];
+      var lx = match$2[0];
+      if (spacePressed) {
+        return {
+                startTime: game_startTime,
+                worldTime: game_worldTime,
+                realTime: game_realTime,
+                lastTs: ts,
+                timeOfDay: game_timeOfDay,
+                gameSpeed: game_gameSpeed,
+                player: PlayerMethods.setTargetLocation(/* tuple */[
+                      lx,
+                      ly
+                    ], game_player),
+                mode: /* MapScreen */Block.__(1, [/* Running */0]),
+                weather: game_weather,
+                world: game_world,
+                keys: keys,
+                cities: game_cities,
+                workers: game_workers,
+                known: game_known,
+                plants: game_plants
+              };
+      } else {
+        var diffY = upPressed ? -1 : (
+            downPressed ? 1 : 0
+          );
+        var diffX = leftPressed ? -1 : (
+            rightPressed ? 1 : 0
+          );
+        var newLX = Caml_primitive.caml_int_min(Constants.worldSide - 1 | 0, Caml_primitive.caml_int_max(lx + diffX | 0, 0));
+        var newLY = Caml_primitive.caml_int_min(Constants.worldSide - 1 | 0, Caml_primitive.caml_int_max(ly + diffY | 0, 0));
+        return {
+                startTime: game_startTime,
+                worldTime: game_worldTime,
+                realTime: game_realTime,
+                lastTs: ts,
+                timeOfDay: game_timeOfDay,
+                gameSpeed: game_gameSpeed,
+                player: game_player,
+                mode: /* MapScreen */Block.__(1, [/* ChoosingLocation */Block.__(0, [/* tuple */[
+                          newLX,
+                          newLY
+                        ]])]),
+                weather: game_weather,
+                world: game_world,
+                keys: keys,
+                cities: game_cities,
+                workers: game_workers,
+                known: game_known,
+                plants: game_plants
+              };
+      }
     }
   } else {
-    var realTime = ts - game$prime$prime_startTime;
+    var realTime = game_realTime + (ts - lastTs);
     if (realTime > match[0]) {
       return {
-              startTime: game$prime$prime_startTime,
-              worldTime: game$prime$prime_worldTime,
-              realTime: game$prime$prime_realTime,
-              timeOfDay: game$prime$prime_timeOfDay,
-              gameSpeed: game$prime$prime_gameSpeed,
-              player: game$prime$prime_player,
+              startTime: game_startTime,
+              worldTime: game_worldTime,
+              realTime: realTime,
+              lastTs: ts,
+              timeOfDay: game_timeOfDay,
+              gameSpeed: game_gameSpeed,
+              player: game_player,
               mode: /* HomeScreen */0,
-              weather: game$prime$prime_weather,
-              world: game$prime$prime_world,
-              paused: game$prime$prime_paused,
+              weather: game_weather,
+              world: game_world,
               keys: keys,
-              cities: game$prime$prime_cities,
-              workers: game$prime$prime_workers,
-              known: game$prime$prime_known,
-              plants: game$prime$prime_plants
+              cities: game_cities,
+              workers: game_workers,
+              known: game_known,
+              plants: game_plants
             };
     } else {
-      return game$prime$prime;
+      return game;
     }
   }
 }
@@ -20232,9 +20571,9 @@ exports.takeWorkerResults = takeWorkerResults;
 exports.takeCityUpdate = takeCityUpdate;
 exports.oneFrame = oneFrame;
 exports.runGame = runGame;
-/* Contypes Not a pure module */
+/* Math Not a pure module */
 
-},{"./cityMethods.bs.js":35,"./constants.bs.js":37,"./contypes.bs.js":38,"./namegen.bs.js":47,"./playerMethods.bs.js":49,"./tod.bs.js":52,"./workerMethods.bs.js":55,"bs-platform/lib/js/array.js":1,"bs-platform/lib/js/curry.js":24,"bs-platform/lib/js/list.js":25}],44:[function(require,module,exports){
+},{"./cityMethods.bs.js":35,"./constants.bs.js":37,"./contypes.bs.js":38,"./gamestate.bs.js":42,"./math.bs.js":45,"./namegen.bs.js":47,"./playerMethods.bs.js":49,"./tod.bs.js":52,"./workerMethods.bs.js":55,"bs-platform/lib/js/array.js":1,"bs-platform/lib/js/block.js":2,"bs-platform/lib/js/caml_primitive.js":17,"bs-platform/lib/js/curry.js":24,"bs-platform/lib/js/list.js":25}],44:[function(require,module,exports){
 var demo = require('./demo.bs');
 demo.main(document.getElementById('demo'));
 
@@ -20242,6 +20581,10 @@ demo.main(document.getElementById('demo'));
 // Generated by BUCKLESCRIPT, PLEASE EDIT WITH CARE
 'use strict';
 
+var List = require("bs-platform/lib/js/list.js");
+var Caml_obj = require("bs-platform/lib/js/caml_obj.js");
+var Contypes = require("./contypes.bs.js");
+var Caml_int32 = require("bs-platform/lib/js/caml_int32.js");
 var Caml_option = require("bs-platform/lib/js/caml_option.js");
 
 function distance(param, param$1) {
@@ -20282,13 +20625,62 @@ function toIntPoint(param) {
         ];
 }
 
+function rotationOf(inc, ch, lst) {
+  var which = Contypes.catOptions(List.mapi((function (i, x) {
+              if (Caml_obj.caml_equal(x, ch)) {
+                return i;
+              }
+              
+            }), lst));
+  if (which) {
+    return List.nth(lst, Caml_int32.mod_(which[0] + inc | 0, List.length(lst)));
+  } else {
+    return ch;
+  }
+}
+
+function nextOf(ch, lst) {
+  return rotationOf(1, ch, lst);
+}
+
+function prevOf(ch, lst) {
+  var len = List.length(lst);
+  return rotationOf(len - 1 | 0, ch, lst);
+}
+
+function moveToward(incT, moveRate, param, param$1) {
+  var atY = param$1[1];
+  var atX = param$1[0];
+  var diffX = param[0] + 0.5 - atX;
+  var diffY = param[1] + 0.5 - atY;
+  if (diffX === 0.0 && diffY === 0.0) {
+    return /* tuple */[
+            atX,
+            atY
+          ];
+  } else {
+    var adx = Math.abs(diffX);
+    var moveX = diffX / adx;
+    var ady = Math.abs(diffY);
+    var moveY = diffY / ady;
+    return /* tuple */[
+            atX + incT * moveX * moveRate,
+            atY + incT * moveY * moveRate
+          ];
+  }
+}
+
 exports.distance = distance;
 exports.randomlyChooseInOrder = randomlyChooseInOrder;
 exports.toFloatPoint = toFloatPoint;
 exports.toIntPoint = toIntPoint;
-/* No side effect */
+exports.rotationOf = rotationOf;
+exports.nextOf = nextOf;
+exports.prevOf = prevOf;
+exports.moveToward = moveToward;
+/* Contypes Not a pure module */
 
-},{"bs-platform/lib/js/caml_option.js":16}],46:[function(require,module,exports){
+},{"./contypes.bs.js":38,"bs-platform/lib/js/caml_int32.js":11,"bs-platform/lib/js/caml_obj.js":15,"bs-platform/lib/js/caml_option.js":16,"bs-platform/lib/js/list.js":25}],46:[function(require,module,exports){
 // Generated by BUCKLESCRIPT, PLEASE EDIT WITH CARE
 'use strict';
 
@@ -21490,12 +21882,35 @@ exports.noiseField = noiseField;
 // Generated by BUCKLESCRIPT, PLEASE EDIT WITH CARE
 'use strict';
 
+var $$Math = require("./math.bs.js");
 var Constants = require("./constants.bs.js");
+
+function getCurrentPlayerMoveRate(param) {
+  switch (param) {
+    case /* Clear */0 :
+    case /* Pokkari */1 :
+    case /* Overcast */2 :
+        return 10.0;
+    case /* Rain */3 :
+        return 10.0 * 0.75;
+    case /* Snow */4 :
+        return 10.0 * 0.3;
+    case /* Storm */5 :
+        return 10.0 * 0.1;
+    case /* Fog */6 :
+        return 10.0 * 0.5;
+    
+  }
+}
 
 function newPlayer(param) {
   return {
-          x: Constants.worldSide / 2.0,
-          y: Constants.worldSide / 2.0,
+          x: Constants.worldSide / 2.0 + 0.5,
+          y: Constants.worldSide / 2.0 + 0.5,
+          target: /* tuple */[
+            Constants.worldSide / 2 | 0,
+            Constants.worldSide / 2 | 0
+          ],
           food: 1.0,
           gold: 0.0,
           knowledge: /* [] */0,
@@ -21503,10 +21918,45 @@ function newPlayer(param) {
         };
 }
 
-exports.newPlayer = newPlayer;
-/* No side effect */
+function setTargetLocation(tgt, player) {
+  return {
+          x: player.x,
+          y: player.y,
+          target: tgt,
+          food: player.food,
+          gold: player.gold,
+          knowledge: player.knowledge,
+          health: player.health
+        };
+}
 
-},{"./constants.bs.js":37}],50:[function(require,module,exports){
+function moveCloserToTarget(game, incT, player) {
+  var moveRate = getCurrentPlayerMoveRate(game.weather);
+  var match = $$Math.moveToward(incT, moveRate, player.target, /* tuple */[
+        player.x,
+        player.y
+      ]);
+  return {
+          x: match[0],
+          y: match[1],
+          target: player.target,
+          food: player.food,
+          gold: player.gold,
+          knowledge: player.knowledge,
+          health: player.health
+        };
+}
+
+var playerMoveRate = 10.0;
+
+exports.playerMoveRate = playerMoveRate;
+exports.getCurrentPlayerMoveRate = getCurrentPlayerMoveRate;
+exports.newPlayer = newPlayer;
+exports.setTargetLocation = setTargetLocation;
+exports.moveCloserToTarget = moveCloserToTarget;
+/* Math Not a pure module */
+
+},{"./constants.bs.js":37,"./math.bs.js":45}],50:[function(require,module,exports){
 // Generated by BUCKLESCRIPT, PLEASE EDIT WITH CARE
 'use strict';
 
@@ -21940,6 +22390,7 @@ exports.onKeyUp = onKeyUp;
 // Generated by BUCKLESCRIPT, PLEASE EDIT WITH CARE
 'use strict';
 
+var $$Math = require("./math.bs.js");
 var Block = require("bs-platform/lib/js/block.js");
 var Namegen = require("./namegen.bs.js");
 var Caml_obj = require("bs-platform/lib/js/caml_obj.js");
@@ -21972,16 +22423,17 @@ function newWorker(city, tgt) {
 }
 
 function moveToward(incT, param, worker) {
-  var diffX = param[0] + 0.5 - worker.x;
-  var adx = Math.abs(diffX);
-  var moveX = diffX / adx;
-  var diffY = param[1] + 0.5 - worker.y;
-  var ady = Math.abs(diffY);
-  var moveY = diffY / ady;
+  var match = $$Math.moveToward(incT, 4.0, /* tuple */[
+        param[0],
+        param[1]
+      ], /* tuple */[
+        worker.x,
+        worker.y
+      ]);
   return {
           name: worker.name,
-          x: worker.x + incT * moveX * 4.0,
-          y: worker.y + incT * moveY * 4.0,
+          x: match[0],
+          y: match[1],
           minerals: worker.minerals,
           food: worker.food,
           home: worker.home,
@@ -22060,9 +22512,9 @@ exports.addWorkerFood = addWorkerFood;
 exports.newWorker = newWorker;
 exports.moveToward = moveToward;
 exports.runWorker = runWorker;
-/* Gamestate Not a pure module */
+/* Math Not a pure module */
 
-},{"./gamestate.bs.js":42,"./namegen.bs.js":47,"bs-platform/lib/js/block.js":2,"bs-platform/lib/js/caml_obj.js":15}],56:[function(require,module,exports){
+},{"./gamestate.bs.js":42,"./math.bs.js":45,"./namegen.bs.js":47,"bs-platform/lib/js/block.js":2,"bs-platform/lib/js/caml_obj.js":15}],56:[function(require,module,exports){
 // Generated by BUCKLESCRIPT, PLEASE EDIT WITH CARE
 'use strict';
 

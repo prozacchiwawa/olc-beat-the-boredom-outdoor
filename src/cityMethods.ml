@@ -5,7 +5,7 @@ open Gamestate
 
 let cityRuinTime = 1.0
 let eatingRate = 0.33
-let workerProbFactor = 1.0
+let workerProbFactor = 0.7
 
 let addWorkerProduct w city =
   { city with
@@ -15,7 +15,7 @@ let addWorkerProduct w city =
   }
 
 (* Probability that a given city will try to spawn a new worker at a given hour *)
-let workerProb (city : city) = min 0.01 (workerProbFactor *. (city.population /. city.food))
+let workerProb (city : city) = max 0.01 (workerProbFactor *. (city.population /. city.food))
 
 let rankResource (city : city) ((aw : (int * int)),ak) ((bw : (int * int)),bk) =
   let here = ((float_of_int city.x) +. 0.5, (float_of_int city.y) +. 0.5) in
@@ -82,8 +82,16 @@ let runCity gamestate incT (city : city) =
       ({ city with ruin = ruined }, None)
   else if city.ruin == 0.0 then
     let updatedFood = city.food -. (city.population *. eatingRate) *. incT in
-    let cityWithFood = { city with food = updatedFood } in
-    let trySpawnWorker = (workerProb city) < ((Math.random ()) /. incT) in
+    let updatedPop =
+      if updatedFood > city.population +. 1.25 then
+        city.population +. city.population *. 0.1
+      else
+        city.population
+    in
+    let cityWithFood = { city with food = updatedFood ; population = updatedPop } in
+    let prob = workerProb city in
+    let rnd = (Math.random ()) /. incT in
+    let trySpawnWorker = prob > rnd in
     let canSpawnWorker = city.population >= 20.0 && city.food >= 5.0 in
     if updatedFood < 0.0 then
       let _ = Js.log @@ Printf.sprintf "ruin city %s" city.name in
@@ -91,6 +99,9 @@ let runCity gamestate incT (city : city) =
     else
     if trySpawnWorker && canSpawnWorker then
       let (city, worker) = spawnWorker gamestate cityWithFood in
+      let _ = Js.log @@ Printf.sprintf "Spawn worker prob %f rnd %f pop %f food %f" prob rnd city.population city.food in
+      let _ = Js.log city in
+      let _ = Js.log worker in
       match worker with
       | Some w -> (city, Some (SpawnWorker w))
       | _ -> (city, None)
