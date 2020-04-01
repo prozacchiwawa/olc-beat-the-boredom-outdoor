@@ -17506,8 +17506,20 @@ var Caml_array = require("bs-platform/lib/js/caml_array.js");
 var WorkerMethods = require("./workerMethods.bs.js");
 var Caml_primitive = require("bs-platform/lib/js/caml_primitive.js");
 
-function workerProb(param) {
-  return 0.1;
+function addWorkerProduct(w, city) {
+  return {
+          x: city.x,
+          y: city.y,
+          ruin: city.ruin,
+          name: city.name,
+          population: city.population + City.workerPop,
+          minerals: city.minerals + w.minerals,
+          food: city.food + w.food
+        };
+}
+
+function workerProb(city) {
+  return Caml_primitive.caml_float_min(0.01, 1.0 * (city.population / city.food));
 }
 
 function rankResource(city, param, param$1) {
@@ -17689,7 +17701,7 @@ function runCity(gamestate, incT, city) {
       minerals: cityWithFood_minerals,
       food: updatedFood
     };
-    var trySpawnWorker = 0.1 > Math.random() * incT;
+    var trySpawnWorker = workerProb(city) < Math.random() / incT;
     var canSpawnWorker = city.population >= 20.0 && city.food >= 5.0;
     if (updatedFood < 0.0) {
       console.log(Curry._1(Printf.sprintf(/* Format */[
@@ -17747,8 +17759,12 @@ var cityRuinTime = 1.0;
 
 var eatingRate = 0.33;
 
+var workerProbFactor = 1.0;
+
 exports.cityRuinTime = cityRuinTime;
 exports.eatingRate = eatingRate;
+exports.workerProbFactor = workerProbFactor;
+exports.addWorkerProduct = addWorkerProduct;
 exports.workerProb = workerProb;
 exports.rankResource = rankResource;
 exports.sortByBenefit = sortByBenefit;
@@ -19784,7 +19800,6 @@ exports.locationOfWorkerTarget = locationOfWorkerTarget;
 'use strict';
 
 var Tod = require("./tod.bs.js");
-var City = require("./city.bs.js");
 var List = require("bs-platform/lib/js/list.js");
 var $$Array = require("bs-platform/lib/js/array.js");
 var Curry = require("bs-platform/lib/js/curry.js");
@@ -19888,15 +19903,7 @@ function addWorkerProduct(game, w) {
             world: game.world,
             paused: game.paused,
             keys: game.keys,
-            cities: Curry._3(Contypes.StringMap.add, city.name, {
-                  x: city.x,
-                  y: city.y,
-                  ruin: city.ruin,
-                  name: city.name,
-                  population: city.population + City.workerPop,
-                  minerals: city.minerals + w.minerals,
-                  food: city.food + w.food
-                }, game.cities),
+            cities: Curry._3(Contypes.StringMap.add, city.name, CityMethods.addWorkerProduct(w, city), game.cities),
             workers: Curry._2(Contypes.StringMap.remove, w.name, game.workers),
             known: game.known,
             plants: game.plants
@@ -20227,7 +20234,7 @@ exports.oneFrame = oneFrame;
 exports.runGame = runGame;
 /* Contypes Not a pure module */
 
-},{"./city.bs.js":34,"./cityMethods.bs.js":35,"./constants.bs.js":37,"./contypes.bs.js":38,"./namegen.bs.js":47,"./playerMethods.bs.js":49,"./tod.bs.js":52,"./workerMethods.bs.js":55,"bs-platform/lib/js/array.js":1,"bs-platform/lib/js/curry.js":24,"bs-platform/lib/js/list.js":25}],44:[function(require,module,exports){
+},{"./cityMethods.bs.js":35,"./constants.bs.js":37,"./contypes.bs.js":38,"./namegen.bs.js":47,"./playerMethods.bs.js":49,"./tod.bs.js":52,"./workerMethods.bs.js":55,"bs-platform/lib/js/array.js":1,"bs-platform/lib/js/curry.js":24,"bs-platform/lib/js/list.js":25}],44:[function(require,module,exports){
 var demo = require('./demo.bs');
 demo.main(document.getElementById('demo'));
 

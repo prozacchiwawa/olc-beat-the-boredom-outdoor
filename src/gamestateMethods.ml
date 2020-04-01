@@ -64,15 +64,7 @@ let addWorkerProduct game w =
   try
     let city = StringMap.find w.Worker.home game.cities in
     { game with
-      cities =
-        StringMap.add
-          city.name
-          { city with
-            population = city.population +. City.workerPop
-          ; food = city.food +. w.food
-          ; minerals = city.minerals +. w.minerals
-          }
-          game.cities
+      cities = StringMap.add city.name (CityMethods.addWorkerProduct w city) game.cities
     ; workers = StringMap.remove w.name game.workers
     }
   with _ ->
