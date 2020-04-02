@@ -189,7 +189,7 @@ let drawCityStatus state (city : City.city) =
 let drawMiscHud state =
   match state.game.mode with
   | MapScreen Running ->
-    drawUpperRightStatus state "Running"
+    drawUpperRightStatus state @@ Printf.sprintf "Running: %s" @@ Weather.weatherToString state.game.weather
   | MapScreen (ChoosingLocation (x,y)) ->
     let _ =
       let (cx,cy) =

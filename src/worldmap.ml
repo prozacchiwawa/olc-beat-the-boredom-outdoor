@@ -20,7 +20,9 @@ let cacheMapScreen state =
     ImageFromCanvas.withNewCanvas "hidden" state.spec.width state.spec.height
       (fun canvas ->
          let ctx = getContext2D canvas in
-         let palette = getPaletteByTimeOfDay mapPalette state.game.timeOfDay in
+         let palette =
+           getPaletteByTimeOfDay (mapPaletteByWeather state.game.weather) state.game.timeOfDay
+         in
          let bgColor = Array.get palette ((Array.length palette) - 1) in
          let _ =
            setFillStyle ctx @@ fillStyleOfString @@ stringOfColor @@ colorOfCoord bgColor

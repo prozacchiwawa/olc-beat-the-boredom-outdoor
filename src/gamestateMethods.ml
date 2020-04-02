@@ -97,12 +97,27 @@ let takeCityUpdate game (city,eff) =
       cities = StringUpdateMap.go city.name (fun _ -> Some city) game.cities
     }
 
+let runWeather game =
+  let (px,py) = (int_of_float game.player.x,int_of_float game.player.y) in
+  let altitude = Array.get game.world.groundData (py * game.world.groundX + px) in
+  let altitudeBlock = int_of_float (altitude *. 7.0) in
+  let prob = 1.0 -. altitude in
+  let stepDownProb = prob *. prob in
+  if stepDownProb < (Math.random ()) then
+    { game with weather = Weather.stepDownWeather altitudeBlock game.weather }
+  else
+    { game with weather = Weather.stepUpWeather altitudeBlock game.weather }
+
 let oneFrame game ts =
   let realTime = game.realTime +. ts in
   let lastWorldTime = game.worldTime in
   let worldTime = realTime /. (game.gameSpeed *. 1000.0) in
   let timeOfDay = timeOfDayFromWorldTime worldTime in
   let timeInc = worldTime -. game.worldTime in
+  let newWeatherBlock =
+    (int_of_float (worldTime /. Weather.weatherTime)) !=
+    (int_of_float (lastWorldTime /. Weather.weatherTime))
+  in
   let newWeek =
     (int_of_float (worldTime /. Plants.plantGrowth)) !=
     (int_of_float (lastWorldTime /. Plants.plantGrowth))
@@ -113,6 +128,12 @@ let oneFrame game ts =
     ; realTime = realTime
     ; timeOfDay = timeOfDay
     }
+  in
+  let game =
+    if newWeatherBlock && Weather.weatherChangePct < (Math.random ()) then
+      runWeather game
+    else
+      game
   in
   let game = if newWeek then Plants.runPlants game else game in
   (* Run player *)
