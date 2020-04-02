@@ -32,27 +32,31 @@ let newGame world =
 
 let startingCities = 4
 
+let addCity city game =
+  { game with cities = StringMap.add city.name city game.cities }
+
+let rec raiseCity n game =
+  if n >= 5 then
+    game
+  else
+    let cx = int_of_float @@ (Math.random ()) *. (float_of_int worldSide) in
+    let cy = int_of_float @@ (Math.random ()) *. (float_of_int worldSide) in
+    let alreadyHaveCities =
+      StringMap.fold (fun _ c s -> IPointSet.add (c.x,c.y) s) game.cities IPointSet.empty
+      |> Life.pointsAndNeighbors
+    in
+    if Plants.temperate game (cx,cy) || IPointSet.mem (cx,cy) alreadyHaveCities then
+      let nc = CityMethods.newCity cx cy in
+      game |> addCity
+        { nc with
+          population = 80.0 +. ((Math.random ()) *. 40.0)
+        }
+    else
+      raiseCity (n+1) game
+
 let generateStartCities game =
-  let cities =
-    Array.init
-      startingCities
-      (fun _ ->
-         let cx = (Math.random ()) *. (float_of_int worldSide) in
-         let cy = (Math.random ()) *. (float_of_int worldSide) in
-         { x = int_of_float cx
-         ; y = int_of_float cy
-         ; ruin = 0.0
-         ; name = Namegen.generateRandomName 3
-         ; population = 80.0 +. ((Math.random ()) *. 40.0)
-         ; minerals = 10.0
-         ; food = 100.0
-         }
-      )
-  in
-  { game with
-    cities =
-      Array.fold_left (fun m c -> StringMap.add c.name c m) StringMap.empty cities
-  }
+  let citiesDummy = Array.make startingCities () in
+  Array.fold_left (fun game _ -> raiseCity 0 game) game citiesDummy
 
 let startGame game =
   { game with mode = MapScreen Running }

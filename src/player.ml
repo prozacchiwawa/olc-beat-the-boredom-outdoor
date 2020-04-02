@@ -7,7 +7,6 @@ type player =
   ; target : (int * int)
 
   ; food : float
-  ; gold : float
 
   ; knowledge : know list
 

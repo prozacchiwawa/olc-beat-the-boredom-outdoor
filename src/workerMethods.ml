@@ -11,7 +11,6 @@ let newWorker (city : city) tgt =
   { name = Namegen.generateRandomName 3
   ; x = (float_of_int city.x) +. 0.5
   ; y = (float_of_int city.y) +. 0.5
-  ; minerals = 0.0
   ; food = 0.0
   ; home = city.name
   ; target = tgt

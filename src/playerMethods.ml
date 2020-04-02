@@ -20,7 +20,6 @@ let newPlayer () =
   ; target = (worldSide / 2, worldSide / 2)
 
   ; food = 1.0
-  ; gold = 0.0
 
   ; knowledge = []
 

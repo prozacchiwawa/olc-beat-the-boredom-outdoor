@@ -12,6 +12,5 @@ type city =
   ; ruin : float
   ; name : string
   ; population : float
-  ; minerals : float
   ; food : float
   }

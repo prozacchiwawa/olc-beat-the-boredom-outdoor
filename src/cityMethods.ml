@@ -7,11 +7,19 @@ let cityRuinTime = 1.0
 let eatingRate = 0.33
 let workerProbFactor = 0.7
 
+let newCity cx cy =
+  { x = cx
+  ; y = cy
+  ; ruin = 0.0
+  ; name = Namegen.generateRandomName 3
+  ; food = 100.0
+  ; population = 100.0
+  }
+
 let addWorkerProduct w city =
   { city with
     population = city.population +. City.workerPop
   ; food = city.food +. w.food
-  ; minerals = city.minerals +. w.minerals
   }
 
 (* Probability that a given city will try to spawn a new worker at a given hour *)

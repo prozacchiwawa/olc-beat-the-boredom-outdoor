@@ -6,6 +6,12 @@ open Gamestate
 
 let plantGrowth = 1.0
 
+let temperate game (px',py') =
+  let px = (px' + worldSide) mod worldSide in
+  let py = (py' + worldSide) mod worldSide in
+  let height = Array.get game.world.groundData (py * game.world.groundX + px) in
+  Math.abs ((Math.random ()) -. height) < 0.2
+
 let rec startPlants n game =
   if n <= 0 then
     game
@@ -39,7 +45,7 @@ let noPlants game pt =
     |> List.fold_left (fun s p -> IPointSet.add p s) IPointSet.empty
   in
   let nc = Life.pointsAndNeighbors (IPointSet.union cities workers) in
-  let conditions = Math.abs ((Math.random ()) -. 0.5) < 0.125 in
+  let conditions = temperate game pt in
   not (IPointSet.mem pt nc) && conditions
 
 let runPlants game =

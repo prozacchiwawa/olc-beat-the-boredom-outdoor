@@ -6,7 +6,6 @@ type worker =
   { name : string
   ; x : float
   ; y : float
-  ; minerals : float
   ; food : float
   ; home : string
   ; target : workerTarget
