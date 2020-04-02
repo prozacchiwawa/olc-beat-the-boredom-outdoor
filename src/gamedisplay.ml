@@ -126,6 +126,7 @@ let drawUpperRightStatus state str =
   fillText state.spec.context2d str (xAt - 10) (ascent + 10)
 
 let cityStatusHeight = 45
+let cityStatusLeft = 30
 
 (* If a city is near enough to a city, display its status at the bottom or top of the screen,
  * depending on player location
@@ -148,7 +149,7 @@ let drawCityStatus state (city : City.city) =
     Sprite.drawSpriteCenter
       state.spec
       (if city.ruin != 0.0 then SpriteDefs.ruinSprite else SpriteDefs.citySprite)
-      10
+      (cityStatusLeft / 2)
       ((ystart + yend) / 2)
       (SpriteDefs.citySprite.width * 2)
       (SpriteDefs.citySprite.height * 2)
@@ -157,7 +158,7 @@ let drawCityStatus state (city : City.city) =
   let metrics = measureText state.spec.context2d tagline in
   let ascent = getFontBBAscent metrics |> int_of_float in
   let descent = getFontBBDescent metrics |> int_of_float in
-  let maxView = max city.population city.food in
+  let maxView = max 200.0 (max city.population city.food) in
   let oneUnit = ascent + descent + 5 in
   let foodWidth = city.food /. maxView *. (float_of_int state.spec.width) *. 0.75 in
   let popWidth = city.population /. maxView *. (float_of_int state.spec.width) *. 0.75 in
@@ -166,7 +167,7 @@ let drawCityStatus state (city : City.city) =
     setFillStyle state.spec.context2d @@ fillStyleOfString @@ "white"
   in
   let _ =
-    fillText state.spec.context2d tagline 20 (ystart + 5 + ascent)
+    fillText state.spec.context2d tagline cityStatusLeft (ystart + 5 + ascent)
   in
   (* Render food *)
   let _ =
@@ -175,7 +176,7 @@ let drawCityStatus state (city : City.city) =
   in
   let foodBarY = ystart + 5 + oneUnit in
   let _ =
-    fillRect state.spec.context2d 20 foodBarY (int_of_float foodWidth) ascent
+    fillRect state.spec.context2d cityStatusLeft foodBarY (int_of_float foodWidth) ascent
   in
   (* Render population *)
   let _ =
@@ -183,7 +184,7 @@ let drawCityStatus state (city : City.city) =
     fillStyleOfString @@ stringOfColor @@ colorOfCoord (3,4)
   in
   let popBarY = ystart + 5 + (oneUnit * 2) in
-  fillRect state.spec.context2d 20 popBarY (int_of_float popWidth) ascent
+  fillRect state.spec.context2d cityStatusLeft popBarY (int_of_float popWidth) ascent
 
 let drawMiscHud state =
   match state.game.mode with
