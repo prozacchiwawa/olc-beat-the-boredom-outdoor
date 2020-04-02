@@ -1,6 +1,5 @@
 type know
   = Patrol of (int * int)
-  | Plants of (int * int)
 
   (*
     Mineral of (float * float)

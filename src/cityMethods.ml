@@ -38,11 +38,7 @@ let randomPatrolLocation (city : city) =
 let whatWeKnowToTarget v =
   match v with
   | Knowledge.Patrol (px,py) ->
-    ( WorkerMethods.addWorkerFood 5.0
-    , TargetCoords (px, py)
-    )
-  | Knowledge.Plants (px,py) ->
-    ( WorkerMethods.addWorkerFood 15.0
+    ( WorkerMethods.addWorkerFood 10.0
     , TargetCoords (px, py)
     )
 
@@ -50,13 +46,10 @@ let getAdvantageousOutings gamestate (city : city) =
   let (randomPatrol : (int * int) * Knowledge.know) =
     randomPatrolLocation city
   in
-  let (knowAbout : ((int * int) * Knowledge.know) list) =
-    IPointMap.bindings gamestate.known
-  in
   let knownResources =
     List.map (fun (_,v) -> v) @@
     List.sort (sortByBenefit city) @@
-    randomPatrol :: knowAbout
+    [randomPatrol]
   in
   List.map whatWeKnowToTarget knownResources
 

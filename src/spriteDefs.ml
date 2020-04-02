@@ -46,9 +46,17 @@ let targetDef =
    ; { color = ( 3,5) ; row = "x x" }
   |]
 
+let plantDef =
+  [| { color = (10,6) ; row = "  x  " }
+   ; { color = (10,5) ; row = "x x x" }
+   ; { color = (10,4) ; row = " xxx " }
+   ; { color = (10,3) ; row = " xxx " }
+  |]
+
 let playerSprite = compileSprite playerSpriteDef
 let citySprite = compileSprite citySpriteDef
 let ruinSprite = compileSprite ruinSpriteDef
 let workerSprite = compileSprite workerSpriteDef
 let deadWorkerSprite = compileSprite deadWorkerSpriteDef
 let targetSprite = compileSprite targetDef
+let plantSprite = compileSprite plantDef

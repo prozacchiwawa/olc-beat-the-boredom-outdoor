@@ -75,6 +75,20 @@ let drawMapScreen state =
            (SpriteDefs.citySprite.height * 2)
       )
   in
+  (* Draw plants *)
+  let _ =
+    state.game.plants |> IPointSet.elements |> List.iter
+      (fun (px,py) ->
+         let (px,py) = worldPositionToScreen state (float_of_int px) (float_of_int py) in
+         Sprite.drawSpriteCenter
+           state.spec
+           SpriteDefs.plantSprite
+           px
+           py
+           (SpriteDefs.plantSprite.width * 2)
+           (SpriteDefs.plantSprite.height * 2)
+      )
+  in
   (* Draw workers *)
   let _ =
     state.game.workers |> StringMap.bindings |> List.iter

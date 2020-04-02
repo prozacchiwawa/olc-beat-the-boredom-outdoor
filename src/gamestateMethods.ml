@@ -3,10 +3,8 @@ open Constants
 open Gamestate
 open Weather
 open Tod
-open Gamestate
 open City
 open CityMethods
-open Player
 open PlayerMethods
 
 let newGame world =
@@ -26,9 +24,11 @@ let newGame world =
   ; keys = StringSet.empty
   ; cities = StringMap.empty
   ; workers = StringMap.empty
-  ; known = IPointMap.empty
   ; plants = IPointSet.empty
   }
+  |> Plants.startPlants 50
+  |> Plants.runPlants
+  |> Plants.runPlants
 
 let startingCities = 4
 
@@ -73,7 +73,9 @@ let addWorkerProduct game w =
 let takeWorkerResults game = function
   | Worker.WorkerSucceed w -> addWorkerProduct game w
   | Worker.WorkerMove w ->
-    { game with workers = StringUpdateMap.go w.name (fun _ -> Some w) game.workers }
+    { game with
+      workers = StringUpdateMap.go w.name (fun _ -> Some w) game.workers
+    }
   | Worker.WorkerDie name ->
     { game with workers = StringMap.remove name game.workers }
 
@@ -93,9 +95,14 @@ let takeCityUpdate game (city,eff) =
 
 let oneFrame game ts =
   let realTime = game.realTime +. ts in
+  let lastWorldTime = game.worldTime in
   let worldTime = realTime /. (game.gameSpeed *. 1000.0) in
   let timeOfDay = timeOfDayFromWorldTime worldTime in
   let timeInc = worldTime -. game.worldTime in
+  let newWeek =
+    (int_of_float (worldTime /. Plants.plantGrowth)) !=
+    (int_of_float (lastWorldTime /. Plants.plantGrowth))
+  in
   let game =
     { game with
       worldTime = worldTime
@@ -103,6 +110,7 @@ let oneFrame game ts =
     ; timeOfDay = timeOfDay
     }
   in
+  let game = if newWeek then Plants.runPlants game else game in
   (* Run player *)
   let playerRes = PlayerMethods.moveCloserToTarget game timeInc game.player in
   let game = { game with player = playerRes } in

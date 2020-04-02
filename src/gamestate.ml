@@ -42,7 +42,6 @@ type gamestate =
   ; keys : StringSet.t
   ; cities : city StringMap.t
   ; workers : worker StringMap.t
-  ; known : know IPointMap.t
   ; plants : IPointSet.t
   }
 
