@@ -26,7 +26,7 @@ type gameMode
   | GameOverScreen of float
   | MapScreen of interactionState
   | CampScreen
-  | FirstPerson
+  | FirstPerson of FirstPerson.minigame
 
 type gamestate =
   { startTime : float

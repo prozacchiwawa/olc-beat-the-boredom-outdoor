@@ -75,11 +75,15 @@
   
 - Options are 'Stop Moving', 'Camp', 'Travel Fast [...]', 'Fight' if enemies apply
 
-- Moving slowly has a chance of revealing very nearby resources.
+- Moving slowly has a chance of gathering very nearby resources.
 
-- Fast travel does not reveal resources.
+- Fast travel involves minigames:
 
-- Camping reveals nearby resources quickly.
+  - Fishing
+  - First person maze
+  - Adventure of link style platforming
+
+- Camping allows resource gathering 
 
 - Move mode puts a cursor and dots on the screen and the cursor blinks.  You move the cursor
   and set a location, after which there's a blinking move target.

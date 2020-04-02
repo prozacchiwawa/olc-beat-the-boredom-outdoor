@@ -1,5 +1,6 @@
 open Contypes
 open Constants
+open DisplaySpec
 open Canvas
 open Allstate
 

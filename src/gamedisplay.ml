@@ -1,5 +1,6 @@
 open Constants
 open Contypes
+open DisplaySpec
 open Color
 open Canvas
 open Allstate
@@ -219,8 +220,9 @@ let drawMiscHud state =
   | GameOverScreen _ -> ()
   | CampScreen ->
     drawUpperRightStatus state "Camp"
-  | FirstPerson ->
-    drawUpperRightStatus state "First Person"
+  | FirstPerson mg ->
+    drawUpperRightStatus state @@
+    Printf.sprintf "First Person %f:%f v %f" mg.playerX mg.playerY mg.playerDir
 
 let drawCityHud state =
   match state.game.mode with
@@ -267,6 +269,7 @@ let displayScreen state =
     let _ = drawHud state in
     Menu.drawMenu state.spec
       [ { color = "yellow" ; str = "CampScreen" } ]
-  | Gamestate.FirstPerson ->
+  | Gamestate.FirstPerson mg ->
     let _ = drawFirstPersonBackdrop state in
+    let _ = FirstPersonMethods.draw state mg in
     drawHud state

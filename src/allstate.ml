@@ -1,12 +1,7 @@
 open Contypes
 open Image
 open Canvas
-
-type displaySpec =
-  { context2d : context2d
-  ; width : int
-  ; height : int
-  }
+open DisplaySpec
 
 type allState =
   { game : Gamestate.gamestate

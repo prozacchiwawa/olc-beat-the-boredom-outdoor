@@ -1,3 +1,4 @@
+open DisplaySpec
 open Color
 open Allstate
 open Canvas

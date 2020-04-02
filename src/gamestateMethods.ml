@@ -108,32 +108,35 @@ let runWeather game =
   else
     { game with weather = Weather.stepUpWeather altitudeBlock game.weather }
 
-let oneFrame game ts =
+let runDayCycle game ts =
   let realTime = game.realTime +. ts in
   let lastWorldTime = game.worldTime in
   let worldTime = realTime /. (game.gameSpeed *. 1000.0) in
   let timeOfDay = timeOfDayFromWorldTime worldTime in
-  let timeInc = worldTime -. game.worldTime in
   let newWeatherBlock =
     (int_of_float (worldTime /. Weather.weatherTime)) !=
     (int_of_float (lastWorldTime /. Weather.weatherTime))
-  in
-  let newWeek =
-    (int_of_float (worldTime /. Plants.plantGrowth)) !=
-    (int_of_float (lastWorldTime /. Plants.plantGrowth))
-  in
-  let game =
-    { game with
-      worldTime = worldTime
-    ; realTime = realTime
-    ; timeOfDay = timeOfDay
-    }
   in
   let game =
     if newWeatherBlock && Weather.weatherChangePct < (Math.random ()) then
       runWeather game
     else
       game
+  in
+  { game with
+    worldTime = worldTime
+  ; realTime = realTime
+  ; timeOfDay = timeOfDay
+  }
+
+let oneFrame game ts =
+  let lastWorldTime = game.worldTime in
+  let game = runDayCycle game ts in
+  let worldTime = game.worldTime in
+  let timeInc = worldTime -. lastWorldTime in
+  let newWeek =
+    (int_of_float (worldTime /. Plants.plantGrowth)) !=
+    (int_of_float (lastWorldTime /. Plants.plantGrowth))
   in
   let game = if newWeek then Plants.runPlants game else game in
   (* Run player *)
@@ -191,7 +194,16 @@ let runGame game' keys ts =
             MapScreen
               (ChoosingLocation (int_of_float game.player.x, int_of_float game.player.y))
         }
-      | Encounter -> { game with mode = FirstPerson }
+      | Encounter ->
+        let px = int_of_float game.player.x in
+        let py = int_of_float game.player.y in
+        let altitude = Array.get game.world.groundData (py * game.world.groundX + px) in
+        let altitudeBlock = int_of_float (altitude *. 7.0) in
+        { game with
+          mode =
+            FirstPerson
+              (FirstPersonMethods.generate altitudeBlock FirstPersonMethods.emptyMinigame)
+        }
       | Camp -> { game with mode = CampScreen }
     else if downPressed then
       { game with mode = MapScreen (PauseMenu (Math.nextOf choice menuChoices)) }
@@ -221,8 +233,24 @@ let runGame game' keys ts =
       { game with mode = MapScreen Running }
     else
       game
-  | FirstPerson ->
+  | FirstPerson mg ->
+    let lastWorldTime = game.worldTime in
+    let game = runDayCycle game (ts -. lastTs) in
+    let worldTime = game.worldTime in
+    let timeInc = worldTime -. lastWorldTime in
+    let downPressed = StringSet.mem "ARROWDOWN" keys in
+    let upPressed = StringSet.mem "ARROWUP" keys in
+    let leftPressed = StringSet.mem "ARROWLEFT" keys in
+    let rightPressed = StringSet.mem "ARROWRIGHT" keys in
     if spacePressed then
-      { game with mode = MapScreen Running}
+      { game with mode = MapScreen Running }
+    else if downPressed then
+      { game with mode = FirstPerson (FirstPersonMethods.handleMove (timeInc *. (-1.0)) mg) }
+    else if upPressed then
+      { game with mode = FirstPerson (FirstPersonMethods.handleMove timeInc mg) }
+    else if leftPressed then
+      { game with mode = FirstPerson (FirstPersonMethods.handleRot (timeInc *. (-1.0)) mg) }
+    else if rightPressed then
+      { game with mode = FirstPerson (FirstPersonMethods.handleRot timeInc mg) }
     else
       game

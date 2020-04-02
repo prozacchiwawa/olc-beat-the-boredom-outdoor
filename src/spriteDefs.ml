@@ -53,6 +53,51 @@ let plantDef =
    ; { color = (10,3) ; row = " xxx " }
   |]
 
+let rockDef =
+  [| { color = ( 0,3) ; row = "  xxx  " }
+   ; { color = ( 0,2) ; row = " xxxxx " }
+   ; { color = ( 0,1) ; row = "  xxxx " }
+  |]
+
+let treeDef =
+  [| { color = (10,3) ; row = "   x   " }
+   ; { color = (10,3) ; row = "   x   " }
+   ; { color = (10,4) ; row = "  xxx  " }
+   ; { color = (10,4) ; row = "  xxx  " }
+   ; { color = (10,5) ; row = " xxxxx " }
+   ; { color = (10,5) ; row = " xxxxx " }
+   ; { color = (10,6) ; row = "xxxxxxx" }
+   ; { color = (10,3) ; row = "  xxx  " }
+   ; { color = (10,3) ; row = "  xxx  " }
+   ; { color = (10,5) ; row = " xxxxx " }
+   ; { color = (10,5) ; row = " xxxxx " }
+   ; { color = (10,6) ; row = "xxxxxxx" }
+   ; { color = ( 2,0) ; row = "  xxx  " }
+   ; { color = ( 2,0) ; row = "  xxx  " }
+   ; { color = ( 2,0) ; row = "  xxx  " }
+   ; { color = ( 2,0) ; row = "  xxx  " }
+   ; { color = ( 2,0) ; row = "  xxx  " }
+   ; { color = ( 2,0) ; row = "  xxx  " }
+  |]
+
+let entranceDef =
+  [| { color = ( 2,7) ; row = "  x  " }
+   ; { color = ( 2,6) ; row = " xx  " }
+   ; { color = ( 3,6) ; row = "xx x " }
+   ; { color = ( 3,5) ; row = " xx  " }
+   ; { color = ( 0,0) ; row = " xxx " }
+   ; { color = ( 0,0) ; row = "xx xx" }
+  |]
+
+let exitDef =
+  [| { color = ( 0,7) ; row = "xxxxxxxxx" }
+   ; { color = ( 0,7) ; row = "xx     xx" }
+   ; { color = ( 0,7) ; row = "xx     xx" }
+   ; { color = ( 0,7) ; row = "xx     xx" }
+   ; { color = ( 0,7) ; row = "xx     xx" }
+   ; { color = ( 0,7) ; row = "xx     xx" }
+  |]
+
 let playerSprite = compileSprite playerSpriteDef
 let citySprite = compileSprite citySpriteDef
 let ruinSprite = compileSprite ruinSpriteDef
@@ -60,3 +105,7 @@ let workerSprite = compileSprite workerSpriteDef
 let deadWorkerSprite = compileSprite deadWorkerSpriteDef
 let targetSprite = compileSprite targetDef
 let plantSprite = compileSprite plantDef
+let rockSprite = compileSprite rockDef
+let treeSprite = compileSprite treeDef
+let entranceSprite = compileSprite entranceDef
+let exitSprite = compileSprite exitDef

@@ -1,10 +1,13 @@
 open Contypes
 
+let pi = 3.1415926
 external random : unit -> float = "Math.random" [@@bs.val]
 external floor : float -> float = "Math.floor" [@@bs.val]
 external ceil : float -> float = "Math.ceil" [@@bs.val]
 external sqrt : float -> float = "Math.sqrt" [@@bs.val]
 external abs : float -> float = "Math.abs" [@@bs.val]
+external sin : float -> float = "Math.sin" [@@bs.val]
+external cos : float -> float = "Math.cos" [@@bs.val]
 
 let distance (p1x,p1y) (p2x,p2y) =
   let dx = (p2x -. p1x) in
