@@ -19115,6 +19115,8 @@ function chooseDecoSprite(param) {
         return SpriteDefs.entranceSprite;
     case /* Exit */4 :
         return SpriteDefs.exitSprite;
+    case /* Path */5 :
+        return SpriteDefs.pathSprite;
     
   }
 }
@@ -19132,8 +19134,18 @@ function draw(state, minigame) {
                         ]),
                     v
                   ];
+          } else {
+            var match$1 = coordOf(i);
+            var ax$1 = Caml_int32.imul(match$1[0], 10) + 5.0 - minigame.playerX * 10.0;
+            var ay$1 = Caml_int32.imul(match$1[1], 10) + 5.0 - minigame.playerY * 10.0;
+            return /* tuple */[
+                    rotateCoords(minigame.playerDir, /* tuple */[
+                          ax$1,
+                          ay$1
+                        ]),
+                    /* Path */5
+                  ];
           }
-          
         }), minigame.values);
   var zz = /* tuple */[
     0.0,
@@ -19143,8 +19155,10 @@ function draw(state, minigame) {
                 var match = param[0];
                 var py = match[1] / 150.0;
                 var sprite = chooseDecoSprite(param[1]);
-                var centerOfScaledSpriteY = ((sprite.height / 2 | 0) - 3 | 0) / py;
-                return Sprite.drawSpriteCenter(state.spec, sprite, (state.spec.width / 2 | 0) + match[0] / py | 0, (state.spec.height / 2 | 0) + centerOfScaledSpriteY | 0, (Caml_int32.imul(3, sprite.width) / 2 | 0) / py | 0, (Caml_int32.imul(3, sprite.height) / 2 | 0) / py | 0);
+                var scale = 8.0 / sprite.width;
+                var aspect = sprite.height / sprite.width;
+                var pz = scale * ((sprite.height / 2 | 0) - (sprite.width / 2 | 0) | 0);
+                return Sprite.drawSpriteCenter(state.spec, sprite, (state.spec.width / 2 | 0) + match[0] / py | 0, (state.spec.height / 2 | 0) + pz / py | 0, 8.0 / py | 0, aspect * 8.0 / py | 0);
               }), List.sort((function (param, param$1) {
                     var d1 = $$Math.distance(param[0], zz);
                     var d2 = $$Math.distance(param$1[0], zz);
@@ -19177,6 +19191,8 @@ function handleRot(amt, minigame) {
         };
 }
 
+var spriteWidth = 8.0;
+
 var moveDist = 10.0;
 
 var rotDist = 5.0;
@@ -19191,6 +19207,7 @@ exports.generate = generate;
 exports.viewDirection = viewDirection;
 exports.rotateCoords = rotateCoords;
 exports.chooseDecoSprite = chooseDecoSprite;
+exports.spriteWidth = spriteWidth;
 exports.draw = draw;
 exports.moveDist = moveDist;
 exports.rotDist = rotDist;
@@ -23683,48 +23700,142 @@ var treeDef = /* array */[
   }
 ];
 
+var pathDef = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      4
+    ],
+    row: "                     "
+  },
+  {
+    color: /* tuple */[
+      0,
+      4
+    ],
+    row: "                     "
+  },
+  {
+    color: /* tuple */[
+      0,
+      4
+    ],
+    row: "                     "
+  },
+  {
+    color: /* tuple */[
+      0,
+      4
+    ],
+    row: "                     "
+  },
+  {
+    color: /* tuple */[
+      0,
+      4
+    ],
+    row: "                     "
+  },
+  {
+    color: /* tuple */[
+      0,
+      4
+    ],
+    row: "                     "
+  },
+  {
+    color: /* tuple */[
+      0,
+      4
+    ],
+    row: "                     "
+  },
+  {
+    color: /* tuple */[
+      0,
+      4
+    ],
+    row: "                     "
+  },
+  {
+    color: /* tuple */[
+      0,
+      4
+    ],
+    row: "                     "
+  },
+  {
+    color: /* tuple */[
+      0,
+      3
+    ],
+    row: "      xxxxxxxxx      "
+  },
+  {
+    color: /* tuple */[
+      0,
+      2
+    ],
+    row: "     xxxxxxxxxxx     "
+  }
+];
+
 var entranceDef = /* array */[
   {
     color: /* tuple */[
       2,
       7
     ],
-    row: "  x  "
+    row: "             "
+  },
+  {
+    color: /* tuple */[
+      2,
+      7
+    ],
+    row: "             "
+  },
+  {
+    color: /* tuple */[
+      2,
+      7
+    ],
+    row: "      x      "
   },
   {
     color: /* tuple */[
       2,
       6
     ],
-    row: " xx  "
+    row: "     xx      "
   },
   {
     color: /* tuple */[
       3,
       6
     ],
-    row: "xx x "
+    row: "    xx x     "
   },
   {
     color: /* tuple */[
       3,
       5
     ],
-    row: " xx  "
+    row: "     xx      "
   },
   {
     color: /* tuple */[
       0,
       0
     ],
-    row: " xxx "
+    row: "     xxx     "
   },
   {
     color: /* tuple */[
       0,
       0
     ],
-    row: "xx xx"
+    row: "    xx xx    "
   }
 ];
 
@@ -23795,6 +23906,8 @@ var entranceSprite = Sprite.compileSprite(entranceDef);
 
 var exitSprite = Sprite.compileSprite(exitDef);
 
+var pathSprite = Sprite.compileSprite(pathDef);
+
 exports.playerSpriteDef = playerSpriteDef;
 exports.citySpriteDef = citySpriteDef;
 exports.ruinSpriteDef = ruinSpriteDef;
@@ -23804,6 +23917,7 @@ exports.targetDef = targetDef;
 exports.plantDef = plantDef;
 exports.rockDef = rockDef;
 exports.treeDef = treeDef;
+exports.pathDef = pathDef;
 exports.entranceDef = entranceDef;
 exports.exitDef = exitDef;
 exports.playerSprite = playerSprite;
@@ -23817,6 +23931,7 @@ exports.rockSprite = rockSprite;
 exports.treeSprite = treeSprite;
 exports.entranceSprite = entranceSprite;
 exports.exitSprite = exitSprite;
+exports.pathSprite = pathSprite;
 /* playerSprite Not a pure module */
 
 },{"./sprite.bs.js":54}],56:[function(require,module,exports){

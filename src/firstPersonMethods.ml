@@ -105,6 +105,9 @@ let chooseDecoSprite = function
   | Tree -> SpriteDefs.treeSprite
   | Entrance -> SpriteDefs.entranceSprite
   | Exit -> SpriteDefs.exitSprite
+  | Path -> SpriteDefs.pathSprite
+
+let spriteWidth = 8.0
 
 let draw state minigame =
   let antiR = minigame.playerDir *. (-1.0) in
@@ -121,7 +124,14 @@ let draw state minigame =
              )
            in
            Some (rotateCoords minigame.playerDir (ax,ay), obj)
-         | _ -> None
+         | _ ->
+           let (atX,atY) = coordOf i in
+           let (ax,ay) =
+             ( (float_of_int (atX * 10)) +. 5.0 -. (minigame.playerX *. 10.0)
+             , (float_of_int (atY * 10)) +. 5.0 -. (minigame.playerY *. 10.0)
+             )
+           in
+           Some (rotateCoords minigame.playerDir (ax,ay), Path)
       )
   in
   let zz = (0.0,0.0) in
@@ -139,14 +149,16 @@ let draw state minigame =
     (fun ((px,py'),t) ->
        let py = py' /. 150.0 in
        let sprite = chooseDecoSprite t in
-       let centerOfScaledSpriteY = (float_of_int ((sprite.height / 2) - 3)) /. py in
+       let scale = spriteWidth /. (float_of_int sprite.width) in
+       let aspect = (float_of_int sprite.height) /. (float_of_int sprite.width) in
+       let pz = scale *. (float_of_int ((sprite.height / 2) - (sprite.width / 2))) in
        Sprite.drawSpriteCenter
          state.spec
          sprite
          (int_of_float ((float_of_int (state.spec.width / 2)) +. (px /. py)))
-         (int_of_float ((float_of_int (state.spec.height / 2)) +. centerOfScaledSpriteY))
-         (int_of_float ((float_of_int (3 * sprite.width / 2)) /. py))
-         (int_of_float ((float_of_int (3 * sprite.height / 2)) /. py))
+         (int_of_float ((float_of_int (state.spec.height / 2)) +. (pz /. py)))
+         (int_of_float (spriteWidth /. py))
+         (int_of_float (aspect *. spriteWidth /. py))
     )
 
 let moveDist = 10.0

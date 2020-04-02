@@ -80,13 +80,29 @@ let treeDef =
    ; { color = ( 2,0) ; row = "  xxx  " }
   |]
 
+let pathDef =
+  [| { color = ( 0,4) ; row = "                     " }
+   ; { color = ( 0,4) ; row = "                     " }
+   ; { color = ( 0,4) ; row = "                     " }
+   ; { color = ( 0,4) ; row = "                     " }
+   ; { color = ( 0,4) ; row = "                     " }
+   ; { color = ( 0,4) ; row = "                     " }
+   ; { color = ( 0,4) ; row = "                     " }
+   ; { color = ( 0,4) ; row = "                     " }
+   ; { color = ( 0,4) ; row = "                     " }
+   ; { color = ( 0,3) ; row = "      xxxxxxxxx      " }
+   ; { color = ( 0,2) ; row = "     xxxxxxxxxxx     " }
+  |]
+
 let entranceDef =
-  [| { color = ( 2,7) ; row = "  x  " }
-   ; { color = ( 2,6) ; row = " xx  " }
-   ; { color = ( 3,6) ; row = "xx x " }
-   ; { color = ( 3,5) ; row = " xx  " }
-   ; { color = ( 0,0) ; row = " xxx " }
-   ; { color = ( 0,0) ; row = "xx xx" }
+  [| { color = ( 2,7) ; row = "             " }
+   ; { color = ( 2,7) ; row = "             " }
+   ; { color = ( 2,7) ; row = "      x      " }
+   ; { color = ( 2,6) ; row = "     xx      " }
+   ; { color = ( 3,6) ; row = "    xx x     " }
+   ; { color = ( 3,5) ; row = "     xx      " }
+   ; { color = ( 0,0) ; row = "     xxx     " }
+   ; { color = ( 0,0) ; row = "    xx xx    " }
   |]
 
 let exitDef =
@@ -109,3 +125,4 @@ let rockSprite = compileSprite rockDef
 let treeSprite = compileSprite treeDef
 let entranceSprite = compileSprite entranceDef
 let exitSprite = compileSprite exitDef
+let pathSprite = compileSprite pathDef

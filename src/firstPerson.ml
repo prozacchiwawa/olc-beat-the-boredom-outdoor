@@ -13,6 +13,7 @@ type boardSquare
   | Rock
   | Entrance
   | Exit
+  | Path
 
 type minigame =
   { values : boardSquare option array
