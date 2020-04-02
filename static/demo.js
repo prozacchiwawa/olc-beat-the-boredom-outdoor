@@ -19141,16 +19141,16 @@ function draw(state, minigame) {
   ];
   return List.iter((function (param) {
                 var match = param[0];
-                var py = match[1] / 100.0;
+                var py = match[1] / 150.0;
                 var sprite = chooseDecoSprite(param[1]);
                 var centerOfScaledSpriteY = ((sprite.height / 2 | 0) - 3 | 0) / py;
-                return Sprite.drawSpriteCenter(state.spec, sprite, (state.spec.width / 2 | 0) + match[0] / py | 0, (state.spec.height / 2 | 0) + centerOfScaledSpriteY | 0, sprite.width / py | 0, sprite.height / py | 0);
+                return Sprite.drawSpriteCenter(state.spec, sprite, (state.spec.width / 2 | 0) + match[0] / py | 0, (state.spec.height / 2 | 0) + centerOfScaledSpriteY | 0, (Caml_int32.imul(3, sprite.width) / 2 | 0) / py | 0, (Caml_int32.imul(3, sprite.height) / 2 | 0) / py | 0);
               }), List.sort((function (param, param$1) {
                     var d1 = $$Math.distance(param[0], zz);
                     var d2 = $$Math.distance(param$1[0], zz);
                     return Caml_int32.imul(-1, Caml_primitive.caml_float_compare(d1, d2));
                   }), List.filter((function (param) {
-                          return param[0][1] < 0.0;
+                          return param[0][1] < -0.01;
                         }))(Contypes.catOptions($$Array.to_list(objectsOnGrid)))));
 }
 

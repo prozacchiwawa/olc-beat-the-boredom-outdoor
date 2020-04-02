@@ -128,7 +128,7 @@ let draw state minigame =
   objectsOnGrid
   |> Array.to_list
   |> catOptions
-  |> List.filter (fun ((_,ty),_) -> ty < 0.0)
+  |> List.filter (fun ((_,ty),_) -> ty < -0.01)
   |> List.sort
     (fun (t1p,t1) (t2p,t2) ->
        let d1 = Math.distance t1p zz in
@@ -137,7 +137,7 @@ let draw state minigame =
     )
   |> List.iter
     (fun ((px,py'),t) ->
-       let py = py' /. 100.0 in
+       let py = py' /. 150.0 in
        let sprite = chooseDecoSprite t in
        let centerOfScaledSpriteY = (float_of_int ((sprite.height / 2) - 3)) /. py in
        Sprite.drawSpriteCenter
@@ -145,8 +145,8 @@ let draw state minigame =
          sprite
          (int_of_float ((float_of_int (state.spec.width / 2)) +. (px /. py)))
          (int_of_float ((float_of_int (state.spec.height / 2)) +. centerOfScaledSpriteY))
-         (int_of_float ((float_of_int sprite.width) /. py))
-         (int_of_float ((float_of_int sprite.height) /. py))
+         (int_of_float ((float_of_int (3 * sprite.width / 2)) /. py))
+         (int_of_float ((float_of_int (3 * sprite.height / 2)) /. py))
     )
 
 let moveDist = 10.0
