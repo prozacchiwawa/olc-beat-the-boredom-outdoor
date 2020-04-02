@@ -18939,6 +18939,7 @@ exports.main = main;
 'use strict';
 
 var List = require("bs-platform/lib/js/list.js");
+var $$Math = require("./math.bs.js");
 var Menu = require("./menu.bs.js");
 var Block = require("bs-platform/lib/js/block.js");
 var Color = require("./color.bs.js");
@@ -18946,8 +18947,10 @@ var Curry = require("bs-platform/lib/js/curry.js");
 var Canvas = require("./canvas.bs.js");
 var Printf = require("bs-platform/lib/js/printf.js");
 var Sprite = require("./sprite.bs.js");
+var Caml_obj = require("bs-platform/lib/js/caml_obj.js");
 var Contypes = require("./contypes.bs.js");
 var Worldmap = require("./worldmap.bs.js");
+var Constants = require("./constants.bs.js");
 var Caml_array = require("bs-platform/lib/js/caml_array.js");
 var Caml_int32 = require("bs-platform/lib/js/caml_int32.js");
 var SpriteDefs = require("./spriteDefs.bs.js");
@@ -19034,7 +19037,50 @@ function drawUpperRightStatus(state, str) {
   return /* () */0;
 }
 
-function drawHud(state) {
+function drawCityStatus(state, city) {
+  var ystart = state.game.player.y < (Constants.worldSide / 2 | 0) ? state.spec.height - 45 | 0 : 0;
+  var yend = ystart + 45 | 0;
+  state.spec.context2d.fillStyle = Curry._1(Canvas.fillStyleOfString, Color.stringOfColor(Color.colorOfCoord(/* tuple */[
+                2,
+                1
+              ])));
+  state.spec.context2d.fillRect(0, ystart, state.spec.width, yend);
+  Sprite.drawSpriteCenter(state.spec, city.ruin !== 0.0 ? SpriteDefs.ruinSprite : SpriteDefs.citySprite, 10, (ystart + yend | 0) / 2 | 0, (SpriteDefs.citySprite.width << 1), (SpriteDefs.citySprite.height << 1));
+  var tagline = Curry._1(Printf.sprintf(/* Format */[
+            /* String_literal */Block.__(11, [
+                "Name: ",
+                /* String */Block.__(2, [
+                    /* No_padding */0,
+                    /* End_of_format */0
+                  ])
+              ]),
+            "Name: %s"
+          ]), city.name);
+  var metrics = state.spec.context2d.measureText(tagline);
+  var ascent = metrics.actualBoundingBoxAscent | 0;
+  var descent = metrics.actualBoundingBoxDescent | 0;
+  var maxView = city.population > city.food ? city.population : city.food;
+  var oneUnit = (ascent + descent | 0) + 5 | 0;
+  var foodWidth = city.food / maxView * state.spec.width * 0.75;
+  var popWidth = city.population / maxView * state.spec.width * 0.75;
+  state.spec.context2d.fillStyle = Curry._1(Canvas.fillStyleOfString, "white");
+  state.spec.context2d.fillText(tagline, 20, (ystart + 5 | 0) + ascent | 0);
+  state.spec.context2d.fillStyle = Curry._1(Canvas.fillStyleOfString, Color.stringOfColor(Color.colorOfCoord(/* tuple */[
+                11,
+                4
+              ])));
+  var foodBarY = (ystart + 5 | 0) + oneUnit | 0;
+  state.spec.context2d.fillRect(20, foodBarY, foodWidth | 0, ascent);
+  state.spec.context2d.fillStyle = Curry._1(Canvas.fillStyleOfString, Color.stringOfColor(Color.colorOfCoord(/* tuple */[
+                3,
+                4
+              ])));
+  var popBarY = (ystart + 5 | 0) + (oneUnit << 1) | 0;
+  state.spec.context2d.fillRect(20, popBarY, popWidth | 0, ascent);
+  return /* () */0;
+}
+
+function drawMiscHud(state) {
   var match = state.game.mode;
   if (typeof match === "number") {
     switch (match) {
@@ -19113,6 +19159,43 @@ function drawHud(state) {
   }
 }
 
+function drawCityHud(state) {
+  var match = state.game.mode;
+  if (typeof match === "number" || match.tag !== /* MapScreen */1) {
+    return /* () */0;
+  } else {
+    var cities = List.sort(Caml_obj.caml_compare, List.filter((function (param) {
+                  return param[0] < 3.5;
+                }))(List.map((function (param) {
+                    var c = param[1];
+                    var cityAt_000 = c.x + 0.5;
+                    var cityAt_001 = c.y + 0.5;
+                    var cityAt = /* tuple */[
+                      cityAt_000,
+                      cityAt_001
+                    ];
+                    var dist = $$Math.distance(cityAt, /* tuple */[
+                          state.game.player.x,
+                          state.game.player.y
+                        ]);
+                    return /* tuple */[
+                            dist,
+                            c
+                          ];
+                  }), Curry._1(Contypes.StringMap.bindings, state.game.cities))));
+    if (cities) {
+      return drawCityStatus(state, cities[0][1]);
+    } else {
+      return /* () */0;
+    }
+  }
+}
+
+function drawHud(state) {
+  drawMiscHud(state);
+  return drawCityHud(state);
+}
+
 function displayScreen(state) {
   var match = state.game.mode;
   if (typeof match === "number") {
@@ -19164,7 +19247,8 @@ function displayScreen(state) {
                     ]);
       case /* CampScreen */1 :
           drawFirstPersonBackdrop(state);
-          drawHud(state);
+          drawMiscHud(state);
+          drawCityHud(state);
           return Menu.drawMenu(state.spec, /* :: */[
                       {
                         color: "yellow",
@@ -19174,12 +19258,14 @@ function displayScreen(state) {
                     ]);
       case /* FirstPerson */2 :
           drawFirstPersonBackdrop(state);
-          return drawHud(state);
+          drawMiscHud(state);
+          return drawCityHud(state);
       
     }
   } else if (match.tag) {
     drawMapScreen(state);
-    return drawHud(state);
+    drawMiscHud(state);
+    return drawCityHud(state);
   } else {
     return Menu.drawMenu(state.spec, /* :: */[
                 {
@@ -19193,6 +19279,8 @@ function displayScreen(state) {
 
 var unimplementedStr = "Unimplemented";
 
+var cityStatusHeight = 45;
+
 exports.drawSkyGradient = drawSkyGradient;
 exports.drawGroundGradient = drawGroundGradient;
 exports.drawFirstPersonBackdrop = drawFirstPersonBackdrop;
@@ -19200,11 +19288,15 @@ exports.unimplementedStr = unimplementedStr;
 exports.worldPositionToScreen = worldPositionToScreen;
 exports.drawMapScreen = drawMapScreen;
 exports.drawUpperRightStatus = drawUpperRightStatus;
+exports.cityStatusHeight = cityStatusHeight;
+exports.drawCityStatus = drawCityStatus;
+exports.drawMiscHud = drawMiscHud;
+exports.drawCityHud = drawCityHud;
 exports.drawHud = drawHud;
 exports.displayScreen = displayScreen;
-/* Menu Not a pure module */
+/* Math Not a pure module */
 
-},{"./canvas.bs.js":33,"./color.bs.js":36,"./contypes.bs.js":38,"./gamepalette.bs.js":41,"./menu.bs.js":47,"./sprite.bs.js":52,"./spriteDefs.bs.js":53,"./worldmap.bs.js":58,"bs-platform/lib/js/block.js":2,"bs-platform/lib/js/caml_array.js":5,"bs-platform/lib/js/caml_int32.js":11,"bs-platform/lib/js/curry.js":24,"bs-platform/lib/js/list.js":25,"bs-platform/lib/js/printf.js":28}],41:[function(require,module,exports){
+},{"./canvas.bs.js":33,"./color.bs.js":36,"./constants.bs.js":37,"./contypes.bs.js":38,"./gamepalette.bs.js":41,"./math.bs.js":46,"./menu.bs.js":47,"./sprite.bs.js":52,"./spriteDefs.bs.js":53,"./worldmap.bs.js":58,"bs-platform/lib/js/block.js":2,"bs-platform/lib/js/caml_array.js":5,"bs-platform/lib/js/caml_int32.js":11,"bs-platform/lib/js/caml_obj.js":15,"bs-platform/lib/js/curry.js":24,"bs-platform/lib/js/list.js":25,"bs-platform/lib/js/printf.js":28}],41:[function(require,module,exports){
 // Generated by BUCKLESCRIPT, PLEASE EDIT WITH CARE
 'use strict';
 

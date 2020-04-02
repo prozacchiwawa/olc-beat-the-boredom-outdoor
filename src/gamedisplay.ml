@@ -1,3 +1,4 @@
+open Constants
 open Contypes
 open Color
 open Canvas
@@ -124,7 +125,67 @@ let drawUpperRightStatus state str =
   let _ = setFillStyle state.spec.context2d @@ fillStyleOfString "white" in
   fillText state.spec.context2d str (xAt - 10) (ascent + 10)
 
-let drawHud state =
+let cityStatusHeight = 45
+
+(* If a city is near enough to a city, display its status at the bottom or top of the screen,
+ * depending on player location
+ *)
+let drawCityStatus state (city : City.city) =
+  let ystart =
+    if state.game.player.y < float_of_int (worldSide / 2) then
+      state.spec.height - cityStatusHeight
+    else
+      0
+  in
+  let yend = ystart + cityStatusHeight in
+  let _ =
+    setFillStyle state.spec.context2d @@
+    fillStyleOfString @@ stringOfColor @@ colorOfCoord (2,1)
+  in
+  let _ = fillRect state.spec.context2d 0 ystart state.spec.width yend in
+  (* Icon *)
+  let _ =
+    Sprite.drawSpriteCenter
+      state.spec
+      (if city.ruin != 0.0 then SpriteDefs.ruinSprite else SpriteDefs.citySprite)
+      10
+      ((ystart + yend) / 2)
+      (SpriteDefs.citySprite.width * 2)
+      (SpriteDefs.citySprite.height * 2)
+  in
+  let tagline = Printf.sprintf "Name: %s" city.name in
+  let metrics = measureText state.spec.context2d tagline in
+  let ascent = getFontBBAscent metrics |> int_of_float in
+  let descent = getFontBBDescent metrics |> int_of_float in
+  let maxView = max city.population city.food in
+  let oneUnit = ascent + descent + 5 in
+  let foodWidth = city.food /. maxView *. (float_of_int state.spec.width) *. 0.75 in
+  let popWidth = city.population /. maxView *. (float_of_int state.spec.width) *. 0.75 in
+  (* render name *)
+  let _ =
+    setFillStyle state.spec.context2d @@ fillStyleOfString @@ "white"
+  in
+  let _ =
+    fillText state.spec.context2d tagline 20 (ystart + 5 + ascent)
+  in
+  (* Render food *)
+  let _ =
+    setFillStyle state.spec.context2d @@
+    fillStyleOfString @@ stringOfColor @@ colorOfCoord (11,4)
+  in
+  let foodBarY = ystart + 5 + oneUnit in
+  let _ =
+    fillRect state.spec.context2d 20 foodBarY (int_of_float foodWidth) ascent
+  in
+  (* Render population *)
+  let _ =
+    setFillStyle state.spec.context2d @@
+    fillStyleOfString @@ stringOfColor @@ colorOfCoord (3,4)
+  in
+  let popBarY = ystart + 5 + (oneUnit * 2) in
+  fillRect state.spec.context2d 20 popBarY (int_of_float popWidth) ascent
+
+let drawMiscHud state =
   match state.game.mode with
   | MapScreen Running ->
     drawUpperRightStatus state "Running"
@@ -159,6 +220,32 @@ let drawHud state =
     drawUpperRightStatus state "Camp"
   | FirstPerson ->
     drawUpperRightStatus state "First Person"
+
+let drawCityHud state =
+  match state.game.mode with
+  | MapScreen _ ->
+    begin
+      let cities =
+        state.game.cities
+        |> StringMap.bindings
+        |> List.map
+          (fun (_,(c : City.city)) ->
+             let cityAt = ((float_of_int c.x) +. 0.5, (float_of_int c.y) +. 0.5) in
+             let dist = Math.distance cityAt (state.game.player.x, state.game.player.y) in
+             (dist, c)
+          )
+        |> List.filter (fun (d,_) -> d < 3.5)
+        |> List.sort Pervasives.compare
+      in
+      match cities with
+      | [] -> ()
+      | (_,hd)::_ -> drawCityStatus state hd
+    end
+  | _ -> ()
+
+let drawHud state =
+  drawMiscHud state ;
+  drawCityHud state
 
 let displayScreen state =
   match state.game.mode with
