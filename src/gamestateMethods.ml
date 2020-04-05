@@ -31,6 +31,8 @@ let newGame world =
   |> Plants.runPlants
 
 let startingCities = 4
+let travelFoodGained = 30.0
+let foodTransferRate = 100.0
 
 let addCity city game =
   { game with cities = StringMap.add city.name city game.cities }
@@ -129,6 +131,26 @@ let runDayCycle game ts =
   ; timeOfDay = timeOfDay
   }
 
+let offloadFood timeInc game =
+  let pt = (int_of_float game.player.x, int_of_float game.player.y) in
+  let neighbors = Life.neighbors pt |> Life.pointsAndNeighbors in
+  let nearbyCities =
+    StringMap.bindings game.cities
+    |> List.filter (fun (_,c) -> IPointSet.mem (c.x,c.y) neighbors)
+  in
+  match nearbyCities with
+  | (_,c)::_ ->
+    let amountOfFoodToGive = max game.player.food (timeInc *. foodTransferRate) in
+    let updatedPlayer =
+      { game.player with food = game.player.food -. amountOfFoodToGive }
+    in
+    let updatedCity = { c with food = c.food +. amountOfFoodToGive } in
+    { game with
+      player = updatedPlayer
+    ; cities = StringUpdateMap.go c.name (fun _ -> Some updatedCity) game.cities
+    }
+  | _ -> game
+
 let oneFrame game ts =
   let lastWorldTime = game.worldTime in
   let game = runDayCycle game ts in
@@ -140,8 +162,13 @@ let oneFrame game ts =
   in
   let game = if newWeek then Plants.runPlants game else game in
   (* Run player *)
-  let playerRes = PlayerMethods.moveCloserToTarget game timeInc game.player in
-  let game = { game with player = playerRes } in
+  let amountOfFoodToGain = timeInc *. travelFoodGained in
+  let playerRes =
+    PlayerMethods.moveCloserToTarget game timeInc
+      { game.player with food = amountOfFoodToGain +. game.player.food }
+  in
+  (* If player is close enough to city, discharge food *)
+  let game = (offloadFood timeInc) { game with player = playerRes } in
   (* Run workers *)
   let workerRes =
     game.workers
@@ -184,6 +211,12 @@ let runGame game' keys ts =
       { game with mode = HomeScreen ; realTime = realTime }
     else
       game
+  | MapScreen (MiniVictory t) ->
+    let realTime = game.realTime +. (ts -. lastTs) in
+    if realTime > t then
+      { game with mode = MapScreen Running }
+    else
+      { game with realTime = realTime }
   | MapScreen (PauseMenu choice) ->
     if spacePressed then
       match choice with
@@ -202,7 +235,7 @@ let runGame game' keys ts =
         { game with
           mode =
             FirstPerson
-              (FirstPersonMethods.generate altitudeBlock FirstPersonMethods.emptyMinigame)
+              (FirstPersonMethods.generateWithDef FirstPersonMethods.badMinigameDef altitudeBlock FirstPersonMethods.emptyMinigame)
         }
       | Camp -> { game with mode = CampScreen }
     else if downPressed then
@@ -242,15 +275,24 @@ let runGame game' keys ts =
     let upPressed = StringSet.mem "ARROWUP" keys in
     let leftPressed = StringSet.mem "ARROWLEFT" keys in
     let rightPressed = StringSet.mem "ARROWRIGHT" keys in
-    if spacePressed then
-      { game with mode = MapScreen Running }
-    else if downPressed then
-      { game with mode = FirstPerson (FirstPersonMethods.handleMove (timeInc *. (-1.0)) mg) }
-    else if upPressed then
-      { game with mode = FirstPerson (FirstPersonMethods.handleMove timeInc mg) }
-    else if leftPressed then
-      { game with mode = FirstPerson (FirstPersonMethods.handleRot (timeInc *. (-1.0)) mg) }
-    else if rightPressed then
-      { game with mode = FirstPerson (FirstPersonMethods.handleRot timeInc mg) }
-    else
-      game
+    let fpMoveForward m = FirstPersonMethods.handleMove (timeInc *. m) in
+    let fpRotate m = FirstPersonMethods.handleRot (timeInc *. m) in
+    let ident = fun x -> x in
+    match mg.outcome with
+    | Some o ->
+      let newPlayer =
+        { game.player with food = game.player.food +. o.foodAdj }
+      in
+      { game with
+        mode = MapScreen (MiniVictory (game.realTime +. 500.0))
+      ; player = newPlayer
+      }
+    | _ ->
+      let minigame =
+        mg
+        |> (if downPressed then fpMoveForward (-1.0) else ident)
+        |> (if upPressed then fpMoveForward 1.0 else ident)
+        |> (if leftPressed then fpRotate (-1.0) else ident)
+        |> (if rightPressed then fpRotate 1.0 else ident)
+      in
+      { game with mode = FirstPerson minigame }

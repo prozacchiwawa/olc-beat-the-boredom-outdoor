@@ -9,6 +9,8 @@ let emptyMinigame =
   ; playerX = 7.5
   ; playerY = 15.5
   ; playerDir = 0.0
+  ; score = 0.0
+  ; outcome = None
   }
 
 let indexOf x y = ((y mod boardSize) * boardSize) + (x mod boardSize)
@@ -50,7 +52,7 @@ let findEntrance minigame =
   | [] -> None
   | hd::_ -> Some (coordOf hd)
 
-let generate biome minigame =
+let generateWithDef minigameDef biome minigame =
   let _ =
     Array.iteri
       (fun i s ->
@@ -68,7 +70,7 @@ let generate biome minigame =
            in
            Array.set minigame.values (indexOf j i) boardAt
          done
-      ) badMinigameDef
+      ) minigameDef
   in
   match findEntrance minigame with
   | Some (x,y) ->
@@ -166,10 +168,25 @@ let rotDist = 5.0
 
 let handleMove amt minigame =
   let (vx,vy) = viewDirection (minigame.playerDir +. (Math.pi /. 2.0)) in
-  { minigame with
-    playerX = minigame.playerX +. (vx *. amt *. moveDist)
-  ; playerY = minigame.playerY +. (vy *. amt *. moveDist)
-  }
+  let px =
+    max 0.0 (min (float_of_int boardSize) (minigame.playerX +. (vx *. amt *. moveDist)))
+  in
+  let py =
+    max 0.0 (min (float_of_int boardSize) (minigame.playerY +. (vy *. amt *. moveDist)))
+  in
+  let idx = indexOf (int_of_float px) (int_of_float py) in
+  let whatsThere = Array.get minigame.values idx in
+  let updated =
+    { minigame with
+      playerX = px
+    ; playerY = py
+    }
+  in
+  match whatsThere with
+  | Some Exit -> { updated with outcome = Some { foodAdj = minigame.score } }
+  | Some Entrance -> updated
+  | Some _ -> minigame
+  | _ -> updated
 
 let handleRot amt minigame =
   { minigame with

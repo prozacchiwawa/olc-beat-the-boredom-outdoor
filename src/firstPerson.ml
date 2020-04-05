@@ -15,6 +15,10 @@ type boardSquare
   | Exit
   | Path
 
+type gameOutcome =
+  { foodAdj : float
+  }
+
 type minigame =
   { values : boardSquare option array
   ; actors : game list
@@ -22,6 +26,8 @@ type minigame =
   ; playerX : float
   ; playerY : float
   ; playerDir : float
+  ; score : float
+  ; outcome : gameOutcome option
   }
 
 let boardSize = 15

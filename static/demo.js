@@ -18968,7 +18968,9 @@ var emptyMinigame = {
   objects: /* [] */0,
   playerX: 7.5,
   playerY: 15.5,
-  playerDir: 0.0
+  playerDir: 0.0,
+  score: 0.0,
+  outcome: undefined
 };
 
 function indexOf(x, y) {
@@ -19023,7 +19025,7 @@ function findEntrance(minigame) {
   
 }
 
-function generate(biome, minigame) {
+function generateWithDef(minigameDef, biome, minigame) {
   $$Array.iteri((function (i, s) {
           var sl = s.length;
           for(var j = 0 ,j_finish = sl - 1 | 0; j <= j_finish; ++j){
@@ -19068,7 +19070,7 @@ function generate(biome, minigame) {
             Caml_array.caml_array_set(minigame.values, indexOf(j, i), boardAt);
           }
           return /* () */0;
-        }), badMinigameDef);
+        }), minigameDef);
   var match = findEntrance(minigame);
   if (match !== undefined) {
     var match$1 = match;
@@ -19078,7 +19080,9 @@ function generate(biome, minigame) {
             objects: minigame.objects,
             playerX: match$1[0] + 0.5,
             playerY: match$1[1] + 0.5,
-            playerDir: minigame.playerDir
+            playerDir: minigame.playerDir,
+            score: minigame.score,
+            outcome: minigame.outcome
           };
   } else {
     return minigame;
@@ -19170,14 +19174,55 @@ function draw(state, minigame) {
 
 function handleMove(amt, minigame) {
   var match = viewDirection(minigame.playerDir + $$Math.pi / 2.0);
-  return {
-          values: minigame.values,
-          actors: minigame.actors,
-          objects: minigame.objects,
-          playerX: minigame.playerX + match[0] * amt * 10.0,
-          playerY: minigame.playerY + match[1] * amt * 10.0,
-          playerDir: minigame.playerDir
-        };
+  var px = Caml_primitive.caml_float_max(0.0, Caml_primitive.caml_float_min(FirstPerson.boardSize, minigame.playerX + match[0] * amt * 10.0));
+  var py = Caml_primitive.caml_float_max(0.0, Caml_primitive.caml_float_min(FirstPerson.boardSize, minigame.playerY + match[1] * amt * 10.0));
+  var idx = indexOf(px | 0, py | 0);
+  var whatsThere = Caml_array.caml_array_get(minigame.values, idx);
+  var updated_values = minigame.values;
+  var updated_actors = minigame.actors;
+  var updated_objects = minigame.objects;
+  var updated_playerDir = minigame.playerDir;
+  var updated_score = minigame.score;
+  var updated_outcome = minigame.outcome;
+  var updated = {
+    values: updated_values,
+    actors: updated_actors,
+    objects: updated_objects,
+    playerX: px,
+    playerY: py,
+    playerDir: updated_playerDir,
+    score: updated_score,
+    outcome: updated_outcome
+  };
+  if (whatsThere !== undefined) {
+    var match$1 = whatsThere;
+    if (match$1 >= 3) {
+      switch (match$1 - 3 | 0) {
+        case /* Plant */0 :
+            return updated;
+        case /* Tree */1 :
+            return {
+                    values: updated_values,
+                    actors: updated_actors,
+                    objects: updated_objects,
+                    playerX: px,
+                    playerY: py,
+                    playerDir: updated_playerDir,
+                    score: updated_score,
+                    outcome: {
+                      foodAdj: minigame.score
+                    }
+                  };
+        case /* Rock */2 :
+            return minigame;
+        
+      }
+    } else {
+      return minigame;
+    }
+  } else {
+    return updated;
+  }
 }
 
 function handleRot(amt, minigame) {
@@ -19187,7 +19232,9 @@ function handleRot(amt, minigame) {
           objects: minigame.objects,
           playerX: minigame.playerX,
           playerY: minigame.playerY,
-          playerDir: minigame.playerDir + amt * 5.0
+          playerDir: minigame.playerDir + amt * 5.0,
+          score: minigame.score,
+          outcome: minigame.outcome
         };
 }
 
@@ -19203,7 +19250,7 @@ exports.badMinigameDef = badMinigameDef;
 exports.coordOf = coordOf;
 exports.isEntrance = isEntrance;
 exports.findEntrance = findEntrance;
-exports.generate = generate;
+exports.generateWithDef = generateWithDef;
 exports.viewDirection = viewDirection;
 exports.rotateCoords = rotateCoords;
 exports.chooseDecoSprite = chooseDecoSprite;
@@ -19389,63 +19436,81 @@ function drawMiscHud(state) {
                                   ]),
                                 "Running: %s"
                               ]), Weather.weatherToString(state.game.weather)));
-          } else if (match$1.tag) {
-            var choice = match$1[0];
-            Menu.drawMenu(state.spec, /* :: */[
-                  {
-                    color: /* Resume */0 === choice ? "yellow" : "white",
-                    str: "Resume"
-                  },
-                  /* :: */[
-                    {
-                      color: /* ChooseLocation */1 === choice ? "yellow" : "white",
-                      str: "Change Target"
-                    },
-                    /* :: */[
-                      {
-                        color: /* Encounter */2 === choice ? "yellow" : "white",
-                        str: "Hard Travel"
-                      },
-                      /* :: */[
-                        {
-                          color: /* Camp */3 === choice ? "yellow" : "white",
-                          str: "Camp"
-                        },
-                        /* [] */0
-                      ]
-                    ]
-                  ]
-                ]);
-            return drawUpperRightStatus(state, "Select...");
           } else {
-            var match$2 = match$1[0];
-            var y = match$2[1];
-            var x = match$2[0];
-            var match$3 = worldPositionToScreen(state, x, y);
-            Sprite.drawSpriteCenter(state.spec, SpriteDefs.targetSprite, match$3[0], match$3[1], (SpriteDefs.targetSprite.width << 1), (SpriteDefs.targetSprite.height << 1));
-            return drawUpperRightStatus(state, Curry._2(Printf.sprintf(/* Format */[
-                                /* String_literal */Block.__(11, [
-                                    "Choose location (",
-                                    /* Int */Block.__(4, [
-                                        /* Int_d */0,
-                                        /* No_padding */0,
-                                        /* No_precision */0,
-                                        /* Char_literal */Block.__(12, [
-                                            /* "," */44,
-                                            /* Int */Block.__(4, [
-                                                /* Int_d */0,
-                                                /* No_padding */0,
-                                                /* No_precision */0,
-                                                /* Char_literal */Block.__(12, [
-                                                    /* ")" */41,
-                                                    /* End_of_format */0
-                                                  ])
-                                              ])
-                                          ])
-                                      ])
-                                  ]),
-                                "Choose location (%d,%d)"
-                              ]), x, y));
+            switch (match$1.tag | 0) {
+              case /* ChoosingLocation */0 :
+                  var match$2 = match$1[0];
+                  var y = match$2[1];
+                  var x = match$2[0];
+                  var match$3 = worldPositionToScreen(state, x, y);
+                  Sprite.drawSpriteCenter(state.spec, SpriteDefs.targetSprite, match$3[0], match$3[1], (SpriteDefs.targetSprite.width << 1), (SpriteDefs.targetSprite.height << 1));
+                  return drawUpperRightStatus(state, Curry._2(Printf.sprintf(/* Format */[
+                                      /* String_literal */Block.__(11, [
+                                          "Choose location (",
+                                          /* Int */Block.__(4, [
+                                              /* Int_d */0,
+                                              /* No_padding */0,
+                                              /* No_precision */0,
+                                              /* Char_literal */Block.__(12, [
+                                                  /* "," */44,
+                                                  /* Int */Block.__(4, [
+                                                      /* Int_d */0,
+                                                      /* No_padding */0,
+                                                      /* No_precision */0,
+                                                      /* Char_literal */Block.__(12, [
+                                                          /* ")" */41,
+                                                          /* End_of_format */0
+                                                        ])
+                                                    ])
+                                                ])
+                                            ])
+                                        ]),
+                                      "Choose location (%d,%d)"
+                                    ]), x, y));
+              case /* PauseMenu */1 :
+                  var choice = match$1[0];
+                  Menu.drawMenu(state.spec, /* :: */[
+                        {
+                          color: /* Resume */0 === choice ? "yellow" : "white",
+                          str: "Resume"
+                        },
+                        /* :: */[
+                          {
+                            color: /* ChooseLocation */1 === choice ? "yellow" : "white",
+                            str: "Change Target"
+                          },
+                          /* :: */[
+                            {
+                              color: /* Encounter */2 === choice ? "yellow" : "white",
+                              str: "Hard Travel"
+                            },
+                            /* :: */[
+                              {
+                                color: /* Camp */3 === choice ? "yellow" : "white",
+                                str: "Camp"
+                              },
+                              /* [] */0
+                            ]
+                          ]
+                        ]
+                      ]);
+                  return drawUpperRightStatus(state, "Select...");
+              case /* MiniVictory */2 :
+                  return Menu.drawMenu(state.spec, /* :: */[
+                              {
+                                color: "white",
+                                str: "Travel Success!"
+                              },
+                              /* :: */[
+                                {
+                                  color: "white",
+                                  str: "You got resources!"
+                                },
+                                /* [] */0
+                              ]
+                            ]);
+              
+            }
           }
       case /* FirstPerson */2 :
           var mg = match[0];
@@ -21106,6 +21171,76 @@ function runDayCycle(game, ts) {
         };
 }
 
+function offloadFood(timeInc, game) {
+  var pt_000 = game.player.x | 0;
+  var pt_001 = game.player.y | 0;
+  var pt = /* tuple */[
+    pt_000,
+    pt_001
+  ];
+  var neighbors = Life.pointsAndNeighbors(Life.neighbors(pt));
+  var nearbyCities = List.filter((function (param) {
+            var c = param[1];
+            return Curry._2(Contypes.IPointSet.mem, /* tuple */[
+                        c.x,
+                        c.y
+                      ], neighbors);
+          }))(Curry._1(Contypes.StringMap.bindings, game.cities));
+  if (nearbyCities) {
+    var c = nearbyCities[0][1];
+    var amountOfFoodToGive = Caml_primitive.caml_float_max(game.player.food, timeInc * 100.0);
+    var init = game.player;
+    var updatedPlayer_x = init.x;
+    var updatedPlayer_y = init.y;
+    var updatedPlayer_target = init.target;
+    var updatedPlayer_food = game.player.food - amountOfFoodToGive;
+    var updatedPlayer_knowledge = init.knowledge;
+    var updatedPlayer_health = init.health;
+    var updatedPlayer = {
+      x: updatedPlayer_x,
+      y: updatedPlayer_y,
+      target: updatedPlayer_target,
+      food: updatedPlayer_food,
+      knowledge: updatedPlayer_knowledge,
+      health: updatedPlayer_health
+    };
+    var updatedCity_x = c.x;
+    var updatedCity_y = c.y;
+    var updatedCity_ruin = c.ruin;
+    var updatedCity_name = c.name;
+    var updatedCity_population = c.population;
+    var updatedCity_food = c.food + amountOfFoodToGive;
+    var updatedCity = {
+      x: updatedCity_x,
+      y: updatedCity_y,
+      ruin: updatedCity_ruin,
+      name: updatedCity_name,
+      population: updatedCity_population,
+      food: updatedCity_food
+    };
+    return {
+            startTime: game.startTime,
+            worldTime: game.worldTime,
+            realTime: game.realTime,
+            lastTs: game.lastTs,
+            timeOfDay: game.timeOfDay,
+            gameSpeed: game.gameSpeed,
+            player: updatedPlayer,
+            mode: game.mode,
+            weather: game.weather,
+            world: game.world,
+            keys: game.keys,
+            cities: Contypes.StringUpdateMap.go(c.name, (function (param) {
+                    return updatedCity;
+                  }), game.cities),
+            workers: game.workers,
+            plants: game.plants
+          };
+  } else {
+    return game;
+  }
+}
+
 function oneFrame(game, ts) {
   var lastWorldTime = game.worldTime;
   var game$1 = runDayCycle(game, ts);
@@ -21113,41 +21248,37 @@ function oneFrame(game, ts) {
   var timeInc = worldTime - lastWorldTime;
   var newWeek = (worldTime / Plants.plantGrowth | 0) !== (lastWorldTime / Plants.plantGrowth | 0);
   var game$2 = newWeek ? Plants.runPlants(game$1) : game$1;
-  var playerRes = PlayerMethods.moveCloserToTarget(game$2, timeInc, game$2.player);
-  var game_startTime = game$2.startTime;
-  var game_worldTime = game$2.worldTime;
-  var game_realTime = game$2.realTime;
-  var game_lastTs = game$2.lastTs;
-  var game_timeOfDay = game$2.timeOfDay;
-  var game_gameSpeed = game$2.gameSpeed;
-  var game_mode = game$2.mode;
-  var game_weather = game$2.weather;
-  var game_world = game$2.world;
-  var game_keys = game$2.keys;
-  var game_cities = game$2.cities;
-  var game_workers = game$2.workers;
-  var game_plants = game$2.plants;
-  var game$3 = {
-    startTime: game_startTime,
-    worldTime: game_worldTime,
-    realTime: game_realTime,
-    lastTs: game_lastTs,
-    timeOfDay: game_timeOfDay,
-    gameSpeed: game_gameSpeed,
-    player: playerRes,
-    mode: game_mode,
-    weather: game_weather,
-    world: game_world,
-    keys: game_keys,
-    cities: game_cities,
-    workers: game_workers,
-    plants: game_plants
-  };
+  var amountOfFoodToGain = timeInc * 30.0;
+  var init = game$2.player;
+  var playerRes = PlayerMethods.moveCloserToTarget(game$2, timeInc, {
+        x: init.x,
+        y: init.y,
+        target: init.target,
+        food: amountOfFoodToGain + game$2.player.food,
+        knowledge: init.knowledge,
+        health: init.health
+      });
+  var game$3 = offloadFood(timeInc, {
+        startTime: game$2.startTime,
+        worldTime: game$2.worldTime,
+        realTime: game$2.realTime,
+        lastTs: game$2.lastTs,
+        timeOfDay: game$2.timeOfDay,
+        gameSpeed: game$2.gameSpeed,
+        player: playerRes,
+        mode: game$2.mode,
+        weather: game$2.weather,
+        world: game$2.world,
+        keys: game$2.keys,
+        cities: game$2.cities,
+        workers: game$2.workers,
+        plants: game$2.plants
+      });
   var workerRes = List.map((function (param) {
           return WorkerMethods.runWorker(game$3, timeInc, param);
         }), List.map((function (param) {
               return param[1];
-            }), Curry._1(Contypes.StringMap.bindings, game_workers)));
+            }), Curry._1(Contypes.StringMap.bindings, game$3.workers)));
   var game$4 = List.fold_left(takeWorkerResults, game$3, workerRes);
   var cityRes = List.map((function (param) {
           return CityMethods.runCity(game$4, timeInc, param);
@@ -21288,11 +21419,182 @@ function runGame(game$prime, keys, ts) {
             } else {
               return oneFrame(game, ts - lastTs);
             }
-          } else if (match$1.tag) {
-            var choice = match$1[0];
-            if (spacePressed) {
-              switch (choice) {
-                case /* Resume */0 :
+          } else {
+            switch (match$1.tag | 0) {
+              case /* ChoosingLocation */0 :
+                  var match$2 = match$1[0];
+                  var ly = match$2[1];
+                  var lx = match$2[0];
+                  if (spacePressed) {
+                    return {
+                            startTime: game_startTime,
+                            worldTime: game_worldTime,
+                            realTime: game_realTime,
+                            lastTs: ts,
+                            timeOfDay: game_timeOfDay,
+                            gameSpeed: game_gameSpeed,
+                            player: PlayerMethods.setTargetLocation(/* tuple */[
+                                  lx,
+                                  ly
+                                ], game_player),
+                            mode: /* MapScreen */Block.__(1, [/* Running */0]),
+                            weather: game_weather,
+                            world: game_world,
+                            keys: keys,
+                            cities: game_cities,
+                            workers: game_workers,
+                            plants: game_plants
+                          };
+                  } else {
+                    var diffY = upPressed ? -1 : (
+                        downPressed ? 1 : 0
+                      );
+                    var diffX = leftPressed ? -1 : (
+                        rightPressed ? 1 : 0
+                      );
+                    var newLX = Caml_primitive.caml_int_min(Constants.worldSide - 1 | 0, Caml_primitive.caml_int_max(lx + diffX | 0, 0));
+                    var newLY = Caml_primitive.caml_int_min(Constants.worldSide - 1 | 0, Caml_primitive.caml_int_max(ly + diffY | 0, 0));
+                    return {
+                            startTime: game_startTime,
+                            worldTime: game_worldTime,
+                            realTime: game_realTime,
+                            lastTs: ts,
+                            timeOfDay: game_timeOfDay,
+                            gameSpeed: game_gameSpeed,
+                            player: game_player,
+                            mode: /* MapScreen */Block.__(1, [/* ChoosingLocation */Block.__(0, [/* tuple */[
+                                      newLX,
+                                      newLY
+                                    ]])]),
+                            weather: game_weather,
+                            world: game_world,
+                            keys: keys,
+                            cities: game_cities,
+                            workers: game_workers,
+                            plants: game_plants
+                          };
+                  }
+              case /* PauseMenu */1 :
+                  var choice = match$1[0];
+                  if (spacePressed) {
+                    switch (choice) {
+                      case /* Resume */0 :
+                          return {
+                                  startTime: game_startTime,
+                                  worldTime: game_worldTime,
+                                  realTime: game_realTime,
+                                  lastTs: ts,
+                                  timeOfDay: game_timeOfDay,
+                                  gameSpeed: game_gameSpeed,
+                                  player: game_player,
+                                  mode: /* MapScreen */Block.__(1, [/* Running */0]),
+                                  weather: game_weather,
+                                  world: game_world,
+                                  keys: keys,
+                                  cities: game_cities,
+                                  workers: game_workers,
+                                  plants: game_plants
+                                };
+                      case /* ChooseLocation */1 :
+                          return {
+                                  startTime: game_startTime,
+                                  worldTime: game_worldTime,
+                                  realTime: game_realTime,
+                                  lastTs: ts,
+                                  timeOfDay: game_timeOfDay,
+                                  gameSpeed: game_gameSpeed,
+                                  player: game_player,
+                                  mode: /* MapScreen */Block.__(1, [/* ChoosingLocation */Block.__(0, [/* tuple */[
+                                            game_player.x | 0,
+                                            game_player.y | 0
+                                          ]])]),
+                                  weather: game_weather,
+                                  world: game_world,
+                                  keys: keys,
+                                  cities: game_cities,
+                                  workers: game_workers,
+                                  plants: game_plants
+                                };
+                      case /* Encounter */2 :
+                          var px = game_player.x | 0;
+                          var py = game_player.y | 0;
+                          var altitude = Caml_array.caml_array_get(game_world.groundData, Caml_int32.imul(py, game_world.groundX) + px | 0);
+                          var altitudeBlock = altitude * 7.0 | 0;
+                          return {
+                                  startTime: game_startTime,
+                                  worldTime: game_worldTime,
+                                  realTime: game_realTime,
+                                  lastTs: ts,
+                                  timeOfDay: game_timeOfDay,
+                                  gameSpeed: game_gameSpeed,
+                                  player: game_player,
+                                  mode: /* FirstPerson */Block.__(2, [FirstPersonMethods.generateWithDef(FirstPersonMethods.badMinigameDef, altitudeBlock, FirstPersonMethods.emptyMinigame)]),
+                                  weather: game_weather,
+                                  world: game_world,
+                                  keys: keys,
+                                  cities: game_cities,
+                                  workers: game_workers,
+                                  plants: game_plants
+                                };
+                      case /* Camp */3 :
+                          return {
+                                  startTime: game_startTime,
+                                  worldTime: game_worldTime,
+                                  realTime: game_realTime,
+                                  lastTs: ts,
+                                  timeOfDay: game_timeOfDay,
+                                  gameSpeed: game_gameSpeed,
+                                  player: game_player,
+                                  mode: /* CampScreen */1,
+                                  weather: game_weather,
+                                  world: game_world,
+                                  keys: keys,
+                                  cities: game_cities,
+                                  workers: game_workers,
+                                  plants: game_plants
+                                };
+                      
+                    }
+                  } else if (downPressed) {
+                    return {
+                            startTime: game_startTime,
+                            worldTime: game_worldTime,
+                            realTime: game_realTime,
+                            lastTs: ts,
+                            timeOfDay: game_timeOfDay,
+                            gameSpeed: game_gameSpeed,
+                            player: game_player,
+                            mode: /* MapScreen */Block.__(1, [/* PauseMenu */Block.__(1, [$$Math.nextOf(choice, Gamestate.menuChoices)])]),
+                            weather: game_weather,
+                            world: game_world,
+                            keys: keys,
+                            cities: game_cities,
+                            workers: game_workers,
+                            plants: game_plants
+                          };
+                  } else if (upPressed) {
+                    return {
+                            startTime: game_startTime,
+                            worldTime: game_worldTime,
+                            realTime: game_realTime,
+                            lastTs: ts,
+                            timeOfDay: game_timeOfDay,
+                            gameSpeed: game_gameSpeed,
+                            player: game_player,
+                            mode: /* MapScreen */Block.__(1, [/* PauseMenu */Block.__(1, [$$Math.prevOf(choice, Gamestate.menuChoices)])]),
+                            weather: game_weather,
+                            world: game_world,
+                            keys: keys,
+                            cities: game_cities,
+                            workers: game_workers,
+                            plants: game_plants
+                          };
+                  } else {
+                    return game;
+                  }
+              case /* MiniVictory */2 :
+                  var realTime$1 = game_realTime + (ts - lastTs);
+                  if (realTime$1 > match$1[0]) {
                     return {
                             startTime: game_startTime,
                             worldTime: game_worldTime,
@@ -21309,19 +21611,16 @@ function runGame(game$prime, keys, ts) {
                             workers: game_workers,
                             plants: game_plants
                           };
-                case /* ChooseLocation */1 :
+                  } else {
                     return {
                             startTime: game_startTime,
                             worldTime: game_worldTime,
-                            realTime: game_realTime,
+                            realTime: realTime$1,
                             lastTs: ts,
                             timeOfDay: game_timeOfDay,
                             gameSpeed: game_gameSpeed,
                             player: game_player,
-                            mode: /* MapScreen */Block.__(1, [/* ChoosingLocation */Block.__(0, [/* tuple */[
-                                      game_player.x | 0,
-                                      game_player.y | 0
-                                    ]])]),
+                            mode: game_mode,
                             weather: game_weather,
                             world: game_world,
                             keys: keys,
@@ -21329,135 +21628,8 @@ function runGame(game$prime, keys, ts) {
                             workers: game_workers,
                             plants: game_plants
                           };
-                case /* Encounter */2 :
-                    var px = game_player.x | 0;
-                    var py = game_player.y | 0;
-                    var altitude = Caml_array.caml_array_get(game_world.groundData, Caml_int32.imul(py, game_world.groundX) + px | 0);
-                    var altitudeBlock = altitude * 7.0 | 0;
-                    return {
-                            startTime: game_startTime,
-                            worldTime: game_worldTime,
-                            realTime: game_realTime,
-                            lastTs: ts,
-                            timeOfDay: game_timeOfDay,
-                            gameSpeed: game_gameSpeed,
-                            player: game_player,
-                            mode: /* FirstPerson */Block.__(2, [FirstPersonMethods.generate(altitudeBlock, FirstPersonMethods.emptyMinigame)]),
-                            weather: game_weather,
-                            world: game_world,
-                            keys: keys,
-                            cities: game_cities,
-                            workers: game_workers,
-                            plants: game_plants
-                          };
-                case /* Camp */3 :
-                    return {
-                            startTime: game_startTime,
-                            worldTime: game_worldTime,
-                            realTime: game_realTime,
-                            lastTs: ts,
-                            timeOfDay: game_timeOfDay,
-                            gameSpeed: game_gameSpeed,
-                            player: game_player,
-                            mode: /* CampScreen */1,
-                            weather: game_weather,
-                            world: game_world,
-                            keys: keys,
-                            cities: game_cities,
-                            workers: game_workers,
-                            plants: game_plants
-                          };
-                
-              }
-            } else if (downPressed) {
-              return {
-                      startTime: game_startTime,
-                      worldTime: game_worldTime,
-                      realTime: game_realTime,
-                      lastTs: ts,
-                      timeOfDay: game_timeOfDay,
-                      gameSpeed: game_gameSpeed,
-                      player: game_player,
-                      mode: /* MapScreen */Block.__(1, [/* PauseMenu */Block.__(1, [$$Math.nextOf(choice, Gamestate.menuChoices)])]),
-                      weather: game_weather,
-                      world: game_world,
-                      keys: keys,
-                      cities: game_cities,
-                      workers: game_workers,
-                      plants: game_plants
-                    };
-            } else if (upPressed) {
-              return {
-                      startTime: game_startTime,
-                      worldTime: game_worldTime,
-                      realTime: game_realTime,
-                      lastTs: ts,
-                      timeOfDay: game_timeOfDay,
-                      gameSpeed: game_gameSpeed,
-                      player: game_player,
-                      mode: /* MapScreen */Block.__(1, [/* PauseMenu */Block.__(1, [$$Math.prevOf(choice, Gamestate.menuChoices)])]),
-                      weather: game_weather,
-                      world: game_world,
-                      keys: keys,
-                      cities: game_cities,
-                      workers: game_workers,
-                      plants: game_plants
-                    };
-            } else {
-              return game;
-            }
-          } else {
-            var match$2 = match$1[0];
-            var ly = match$2[1];
-            var lx = match$2[0];
-            if (spacePressed) {
-              return {
-                      startTime: game_startTime,
-                      worldTime: game_worldTime,
-                      realTime: game_realTime,
-                      lastTs: ts,
-                      timeOfDay: game_timeOfDay,
-                      gameSpeed: game_gameSpeed,
-                      player: PlayerMethods.setTargetLocation(/* tuple */[
-                            lx,
-                            ly
-                          ], game_player),
-                      mode: /* MapScreen */Block.__(1, [/* Running */0]),
-                      weather: game_weather,
-                      world: game_world,
-                      keys: keys,
-                      cities: game_cities,
-                      workers: game_workers,
-                      plants: game_plants
-                    };
-            } else {
-              var diffY = upPressed ? -1 : (
-                  downPressed ? 1 : 0
-                );
-              var diffX = leftPressed ? -1 : (
-                  rightPressed ? 1 : 0
-                );
-              var newLX = Caml_primitive.caml_int_min(Constants.worldSide - 1 | 0, Caml_primitive.caml_int_max(lx + diffX | 0, 0));
-              var newLY = Caml_primitive.caml_int_min(Constants.worldSide - 1 | 0, Caml_primitive.caml_int_max(ly + diffY | 0, 0));
-              return {
-                      startTime: game_startTime,
-                      worldTime: game_worldTime,
-                      realTime: game_realTime,
-                      lastTs: ts,
-                      timeOfDay: game_timeOfDay,
-                      gameSpeed: game_gameSpeed,
-                      player: game_player,
-                      mode: /* MapScreen */Block.__(1, [/* ChoosingLocation */Block.__(0, [/* tuple */[
-                                newLX,
-                                newLY
-                              ]])]),
-                      weather: game_weather,
-                      world: game_world,
-                      keys: keys,
-                      cities: game_cities,
-                      workers: game_workers,
-                      plants: game_plants
-                    };
+                  }
+              
             }
           }
       case /* FirstPerson */2 :
@@ -21470,7 +21642,26 @@ function runGame(game$prime, keys, ts) {
           var upPressed$1 = Curry._2(Contypes.StringSet.mem, "ARROWUP", keys);
           var leftPressed$1 = Curry._2(Contypes.StringSet.mem, "ARROWLEFT", keys);
           var rightPressed$1 = Curry._2(Contypes.StringSet.mem, "ARROWRIGHT", keys);
-          if (spacePressed) {
+          var ident = function (x) {
+            return x;
+          };
+          var match$3 = mg.outcome;
+          if (match$3 !== undefined) {
+            var init = game$1.player;
+            var newPlayer_x = init.x;
+            var newPlayer_y = init.y;
+            var newPlayer_target = init.target;
+            var newPlayer_food = game$1.player.food + match$3.foodAdj;
+            var newPlayer_knowledge = init.knowledge;
+            var newPlayer_health = init.health;
+            var newPlayer = {
+              x: newPlayer_x,
+              y: newPlayer_y,
+              target: newPlayer_target,
+              food: newPlayer_food,
+              knowledge: newPlayer_knowledge,
+              health: newPlayer_health
+            };
             return {
                     startTime: game$1.startTime,
                     worldTime: game$1.worldTime,
@@ -21478,76 +21669,8 @@ function runGame(game$prime, keys, ts) {
                     lastTs: game$1.lastTs,
                     timeOfDay: game$1.timeOfDay,
                     gameSpeed: game$1.gameSpeed,
-                    player: game$1.player,
-                    mode: /* MapScreen */Block.__(1, [/* Running */0]),
-                    weather: game$1.weather,
-                    world: game$1.world,
-                    keys: game$1.keys,
-                    cities: game$1.cities,
-                    workers: game$1.workers,
-                    plants: game$1.plants
-                  };
-          } else if (downPressed$1) {
-            return {
-                    startTime: game$1.startTime,
-                    worldTime: game$1.worldTime,
-                    realTime: game$1.realTime,
-                    lastTs: game$1.lastTs,
-                    timeOfDay: game$1.timeOfDay,
-                    gameSpeed: game$1.gameSpeed,
-                    player: game$1.player,
-                    mode: /* FirstPerson */Block.__(2, [FirstPersonMethods.handleMove(timeInc * -1.0, mg)]),
-                    weather: game$1.weather,
-                    world: game$1.world,
-                    keys: game$1.keys,
-                    cities: game$1.cities,
-                    workers: game$1.workers,
-                    plants: game$1.plants
-                  };
-          } else if (upPressed$1) {
-            return {
-                    startTime: game$1.startTime,
-                    worldTime: game$1.worldTime,
-                    realTime: game$1.realTime,
-                    lastTs: game$1.lastTs,
-                    timeOfDay: game$1.timeOfDay,
-                    gameSpeed: game$1.gameSpeed,
-                    player: game$1.player,
-                    mode: /* FirstPerson */Block.__(2, [FirstPersonMethods.handleMove(timeInc, mg)]),
-                    weather: game$1.weather,
-                    world: game$1.world,
-                    keys: game$1.keys,
-                    cities: game$1.cities,
-                    workers: game$1.workers,
-                    plants: game$1.plants
-                  };
-          } else if (leftPressed$1) {
-            return {
-                    startTime: game$1.startTime,
-                    worldTime: game$1.worldTime,
-                    realTime: game$1.realTime,
-                    lastTs: game$1.lastTs,
-                    timeOfDay: game$1.timeOfDay,
-                    gameSpeed: game$1.gameSpeed,
-                    player: game$1.player,
-                    mode: /* FirstPerson */Block.__(2, [FirstPersonMethods.handleRot(timeInc * -1.0, mg)]),
-                    weather: game$1.weather,
-                    world: game$1.world,
-                    keys: game$1.keys,
-                    cities: game$1.cities,
-                    workers: game$1.workers,
-                    plants: game$1.plants
-                  };
-          } else if (rightPressed$1) {
-            return {
-                    startTime: game$1.startTime,
-                    worldTime: game$1.worldTime,
-                    realTime: game$1.realTime,
-                    lastTs: game$1.lastTs,
-                    timeOfDay: game$1.timeOfDay,
-                    gameSpeed: game$1.gameSpeed,
-                    player: game$1.player,
-                    mode: /* FirstPerson */Block.__(2, [FirstPersonMethods.handleRot(timeInc, mg)]),
+                    player: newPlayer,
+                    mode: /* MapScreen */Block.__(1, [/* MiniVictory */Block.__(2, [game$1.realTime + 500.0])]),
                     weather: game$1.weather,
                     world: game$1.world,
                     keys: game$1.keys,
@@ -21556,7 +21679,59 @@ function runGame(game$prime, keys, ts) {
                     plants: game$1.plants
                   };
           } else {
-            return game$1;
+            var tmp;
+            if (rightPressed$1) {
+              var partial_arg = timeInc * 1.0;
+              tmp = (function (param) {
+                  return FirstPersonMethods.handleRot(partial_arg, param);
+                });
+            } else {
+              tmp = ident;
+            }
+            var tmp$1;
+            if (leftPressed$1) {
+              var partial_arg$1 = timeInc * -1.0;
+              tmp$1 = (function (param) {
+                  return FirstPersonMethods.handleRot(partial_arg$1, param);
+                });
+            } else {
+              tmp$1 = ident;
+            }
+            var tmp$2;
+            if (upPressed$1) {
+              var partial_arg$2 = timeInc * 1.0;
+              tmp$2 = (function (param) {
+                  return FirstPersonMethods.handleMove(partial_arg$2, param);
+                });
+            } else {
+              tmp$2 = ident;
+            }
+            var tmp$3;
+            if (downPressed$1) {
+              var partial_arg$3 = timeInc * -1.0;
+              tmp$3 = (function (param) {
+                  return FirstPersonMethods.handleMove(partial_arg$3, param);
+                });
+            } else {
+              tmp$3 = ident;
+            }
+            var minigame = tmp(tmp$1(tmp$2(tmp$3(mg))));
+            return {
+                    startTime: game$1.startTime,
+                    worldTime: game$1.worldTime,
+                    realTime: game$1.realTime,
+                    lastTs: game$1.lastTs,
+                    timeOfDay: game$1.timeOfDay,
+                    gameSpeed: game$1.gameSpeed,
+                    player: game$1.player,
+                    mode: /* FirstPerson */Block.__(2, [minigame]),
+                    weather: game$1.weather,
+                    world: game$1.world,
+                    keys: game$1.keys,
+                    cities: game$1.cities,
+                    workers: game$1.workers,
+                    plants: game$1.plants
+                  };
           }
       
     }
@@ -21565,10 +21740,16 @@ function runGame(game$prime, keys, ts) {
 
 var startingCities = 4;
 
+var travelFoodGained = 30.0;
+
+var foodTransferRate = 100.0;
+
 var gameOverTime = 5000.0;
 
 exports.newGame = newGame;
 exports.startingCities = startingCities;
+exports.travelFoodGained = travelFoodGained;
+exports.foodTransferRate = foodTransferRate;
 exports.addCity = addCity;
 exports.raiseCity = raiseCity;
 exports.generateStartCities = generateStartCities;
@@ -21579,6 +21760,7 @@ exports.takeWorkerResults = takeWorkerResults;
 exports.takeCityUpdate = takeCityUpdate;
 exports.runWeather = runWeather;
 exports.runDayCycle = runDayCycle;
+exports.offloadFood = offloadFood;
 exports.oneFrame = oneFrame;
 exports.runGame = runGame;
 /* Life Not a pure module */
@@ -23300,7 +23482,9 @@ exports.drawSpriteCenter = drawSpriteCenter;
 // Generated by BUCKLESCRIPT, PLEASE EDIT WITH CARE
 'use strict';
 
+var $$Array = require("bs-platform/lib/js/array.js");
 var Sprite = require("./sprite.bs.js");
+var Caml_array = require("bs-platform/lib/js/caml_array.js");
 
 var playerSpriteDef = /* array */[
   {
@@ -23884,6 +24068,1716 @@ var exitDef = /* array */[
   }
 ];
 
+var digit0 = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: " 000 "
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "00 00"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "00 00"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "00 00"
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: " 000 "
+  }
+];
+
+var digit1 = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: "  11 "
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: " 111 "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "  11 "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "  11 "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "  11 "
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "  11 "
+  }
+];
+
+var digit2 = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: " 222 "
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "22 22"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "   22"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "  22 "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: " 22  "
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "22222"
+  }
+];
+
+var digit3 = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: "3333 "
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "   33"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "3333 "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "   33"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "   33"
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "3333 "
+  }
+];
+
+var digit4 = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: "   44"
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "44 44"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "44444"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "   44"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "   44"
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "   44"
+  }
+];
+
+var digit5 = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: "55555"
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "55   "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "5555 "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "   55"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "   55"
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "5555 "
+  }
+];
+
+var digit6 = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: " 666 "
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "66   "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "6666 "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "66 66"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "66 66"
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: " 666 "
+  }
+];
+
+var digit7 = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: "77777"
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "   77"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "  77 "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: " 77  "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: " 77  "
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: " 77  "
+  }
+];
+
+var digit8 = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: " 888 "
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "88 88"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: " 888 "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "88 88"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "88 88"
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: " 888 "
+  }
+];
+
+var digit9 = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: " 999 "
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "99 99"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "99 99"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: " 9999"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "   99"
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: " 999 "
+  }
+];
+
+var letterA = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: " AAA "
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "AA AA"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "AA AA"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "AAAAA"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "AA AA"
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "AA AA"
+  }
+];
+
+var letterB = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: "BBBB "
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "BB BB"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "BBBB "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "BB BB"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "BB BB"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "BBBB "
+  }
+];
+
+var letterC = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: " CCC "
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "CC CC"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "CC   "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "CC   "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "CC CC"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: " CCC "
+  }
+];
+
+var letterD = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: "DDDD "
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "DD DD"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "DD DD"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "DD DD"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "DD DD"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "DDDD "
+  }
+];
+
+var letterE = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: "EEEEE"
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "EE   "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "EEEE "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "EE   "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "EE   "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "EEEEE"
+  }
+];
+
+var letterF = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: "FFFFF"
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "FF   "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "FFFF "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "FF   "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "FF   "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "FF   "
+  }
+];
+
+var letterG = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: " GGGG"
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "GG   "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "GG   "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "GG GG"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "GG GG"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: " GGG "
+  }
+];
+
+var letterH = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: "HH HH"
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "HH HH"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "HHHHH"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "HH HH"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "HH HH"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "HH HH"
+  }
+];
+
+var letterI = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: "IIII "
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: " II  "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: " II  "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: " II  "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: " II  "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "IIII "
+  }
+];
+
+var letterJ = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: "   JJ"
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "   JJ"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "   JJ"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "   JJ"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "JJ JJ"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: " JJJ "
+  }
+];
+
+var letterK = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: "KK KK"
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "KK KK"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "KKKK "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "KK KK"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "KK KK"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "KK KK"
+  }
+];
+
+var letterL = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: "LL   "
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "LL   "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "LL   "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "LL   "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "LL   "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "LLLLL"
+  }
+];
+
+var letterM = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: "MM MM"
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "MMMMM"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "MMMMM"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "MM MM"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "MM MM"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "MM MM"
+  }
+];
+
+var letterN = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: "MMNMM"
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "MMNMM"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "MM MM"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "MM MM"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "MM MM"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "MM MM"
+  }
+];
+
+var letterO = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: " OOO "
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "OO OO"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "OO OO"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "OO OO"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "OO OO"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: " OOO "
+  }
+];
+
+var letterP = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: "PPPP "
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "PP PP"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "PPPP "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "PP   "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "PP   "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "PP   "
+  }
+];
+
+var letterQ = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: " QQQ "
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "QQ QQ"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "QQ QQ"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "QQ QQ"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: " QQQ "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "   QQ"
+  }
+];
+
+var letterR = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: "RRRR "
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "RR RR"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "RRRR "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "RR RR"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "RR RR"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "RR RR"
+  }
+];
+
+var letterS = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: " SSSS"
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "SS   "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: " SSS "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "   SS"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "SS SS"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: " SSS "
+  }
+];
+
+var letterT = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: "TTTT "
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: " TT  "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: " TT  "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: " TT  "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: " TT  "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: " TT  "
+  }
+];
+
+var letterU = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: "UU UU"
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "UU UU"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "UU UU"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "UU UU"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "UU UU"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: " UUU "
+  }
+];
+
+var letterV = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: "VV VV"
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "VV VV"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "VV VV"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "VV VV"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: " VVV "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "  V  "
+  }
+];
+
+var letterW = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: "WW WW"
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "WW WW"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "WW WW"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "WW WW"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "WWWWW"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "WW WW"
+  }
+];
+
+var letterX = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: "XX XX"
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "XX XX"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: " XXX "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "XX XX"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "XX XX"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "XX XX"
+  }
+];
+
+var letterY = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: "YY YY"
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "YY YY"
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: " YYY "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: " YY  "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: " YY  "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: " YY  "
+  }
+];
+
+var letterZ = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: "ZZZZZ"
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "  ZZ "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: " ZZ  "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "ZZ   "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "ZZ   "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "ZZZZZ"
+  }
+];
+
+var symbolColon = /* array */[
+  {
+    color: /* tuple */[
+      0,
+      7
+    ],
+    row: "     "
+  },
+  {
+    color: /* tuple */[
+      0,
+      6
+    ],
+    row: "  :: "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "     "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "     "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "  :: "
+  },
+  {
+    color: /* tuple */[
+      0,
+      5
+    ],
+    row: "     "
+  }
+];
+
+var emptySprite = Sprite.compileSprite(/* array */[{
+        color: /* tuple */[
+          0,
+          0
+        ],
+        row: " "
+      }]);
+
+var colonSprite = Sprite.compileSprite(symbolColon);
+
+var digitSprites = $$Array.map(Sprite.compileSprite, /* array */[
+      digit0,
+      digit1,
+      digit2,
+      digit3,
+      digit4,
+      digit5,
+      digit6,
+      digit7,
+      digit8,
+      digit9
+    ]);
+
+var letterSprites = $$Array.map(Sprite.compileSprite, /* array */[
+      letterA,
+      letterB,
+      letterC,
+      letterD,
+      letterE,
+      letterF,
+      letterG,
+      letterH,
+      letterI,
+      letterJ,
+      letterK,
+      letterL,
+      letterM,
+      letterN,
+      letterO,
+      letterP,
+      letterQ,
+      letterR,
+      letterS,
+      letterT,
+      letterU,
+      letterV,
+      letterW,
+      letterX,
+      letterY,
+      letterZ
+    ]);
+
 var playerSprite = Sprite.compileSprite(playerSpriteDef);
 
 var citySprite = Sprite.compileSprite(citySpriteDef);
@@ -23908,6 +25802,20 @@ var exitSprite = Sprite.compileSprite(exitDef);
 
 var pathSprite = Sprite.compileSprite(pathDef);
 
+function spriteForLetter(ch) {
+  if (ch >= /* "0" */48 && ch <= /* "9" */57) {
+    return Caml_array.caml_array_get(digitSprites, ch - 48 | 0);
+  } else if (ch >= /* "A" */65 && ch <= /* "Z" */90) {
+    return Caml_array.caml_array_get(letterSprites, ch - 65 | 0);
+  } else if (ch >= /* "a" */97 && ch <= /* "z" */122) {
+    return Caml_array.caml_array_get(letterSprites, ch - 97 | 0);
+  } else if (ch === /* " " */32) {
+    return emptySprite;
+  } else {
+    return colonSprite;
+  }
+}
+
 exports.playerSpriteDef = playerSpriteDef;
 exports.citySpriteDef = citySpriteDef;
 exports.ruinSpriteDef = ruinSpriteDef;
@@ -23920,6 +25828,47 @@ exports.treeDef = treeDef;
 exports.pathDef = pathDef;
 exports.entranceDef = entranceDef;
 exports.exitDef = exitDef;
+exports.digit0 = digit0;
+exports.digit1 = digit1;
+exports.digit2 = digit2;
+exports.digit3 = digit3;
+exports.digit4 = digit4;
+exports.digit5 = digit5;
+exports.digit6 = digit6;
+exports.digit7 = digit7;
+exports.digit8 = digit8;
+exports.digit9 = digit9;
+exports.letterA = letterA;
+exports.letterB = letterB;
+exports.letterC = letterC;
+exports.letterD = letterD;
+exports.letterE = letterE;
+exports.letterF = letterF;
+exports.letterG = letterG;
+exports.letterH = letterH;
+exports.letterI = letterI;
+exports.letterJ = letterJ;
+exports.letterK = letterK;
+exports.letterL = letterL;
+exports.letterM = letterM;
+exports.letterN = letterN;
+exports.letterO = letterO;
+exports.letterP = letterP;
+exports.letterQ = letterQ;
+exports.letterR = letterR;
+exports.letterS = letterS;
+exports.letterT = letterT;
+exports.letterU = letterU;
+exports.letterV = letterV;
+exports.letterW = letterW;
+exports.letterX = letterX;
+exports.letterY = letterY;
+exports.letterZ = letterZ;
+exports.symbolColon = symbolColon;
+exports.emptySprite = emptySprite;
+exports.colonSprite = colonSprite;
+exports.digitSprites = digitSprites;
+exports.letterSprites = letterSprites;
 exports.playerSprite = playerSprite;
 exports.citySprite = citySprite;
 exports.ruinSprite = ruinSprite;
@@ -23932,9 +25881,10 @@ exports.treeSprite = treeSprite;
 exports.entranceSprite = entranceSprite;
 exports.exitSprite = exitSprite;
 exports.pathSprite = pathSprite;
-/* playerSprite Not a pure module */
+exports.spriteForLetter = spriteForLetter;
+/* emptySprite Not a pure module */
 
-},{"./sprite.bs.js":54}],56:[function(require,module,exports){
+},{"./sprite.bs.js":54,"bs-platform/lib/js/array.js":1,"bs-platform/lib/js/caml_array.js":5}],56:[function(require,module,exports){
 // Generated by BUCKLESCRIPT, PLEASE EDIT WITH CARE
 'use strict';
 

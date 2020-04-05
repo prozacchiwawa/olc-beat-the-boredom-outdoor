@@ -216,6 +216,11 @@ let drawMiscHud state =
         ]
     in
     drawUpperRightStatus state "Select..."
+  | MapScreen (MiniVictory _) ->
+    Menu.drawMenu state.spec
+      [ { color = "white" ; str = "Travel Success!" }
+      ; { color = "white" ; str = "You got resources!" }
+      ]
   | HomeScreen -> ()
   | GameOverScreen _ -> ()
   | CampScreen ->
