@@ -1,4 +1,5 @@
 open Contypes
+open Rooms
 open Allstate
 open FirstPerson
 
@@ -51,6 +52,60 @@ let findEntrance minigame =
   match candidates with
   | [] -> None
   | hd::_ -> Some (coordOf hd)
+
+(* Find locations where things can be put *)
+let getFreeLocations minigame =
+  let res = ref IPointSet.empty in
+  let _ =
+    Array.iteri
+      (fun i s ->
+         let at = (i mod boardSize, i / boardSize) in
+         if s = None then
+           res := IPointSet.add at (!res)
+         else
+           ()
+      ) minigame.values
+  in
+  !res
+
+let numRoomCenters = 7
+
+let makeMazeDef biome =
+  let defaultObject =
+    match biome with
+    | 3 -> Tree
+    | 4 -> Tree
+    | 5 -> Rock
+    | 6 -> Rock
+    | _ -> Plant
+  in
+  let roomSeeds = emptyRoomDesign numRoomCenters in
+  let rs = Rooms.makeRandomBoard boardSize roomSeeds in
+  let minigame =
+    { emptyMinigame with
+      values =
+        Array.init (boardSize * boardSize)
+          (fun i ->
+             let pt = (i mod boardSize, i / boardSize) in
+             if rs.entrance = pt then
+               Some Entrance
+             else if rs.exit = pt then
+               Some Exit
+             else if IPointSet.mem pt rs.wallSet then
+               Some defaultObject
+             else
+               None
+          )
+    }
+  in
+  match findEntrance minigame with
+  | Some (ex,ey) ->
+    { minigame with
+      playerX = (float_of_int ex) +. 0.5
+    ; playerY = (float_of_int ey) +. 0.5
+    ; playerDir = Math.pi
+    }
+  | _ -> minigame
 
 let generateWithDef minigameDef biome minigame =
   let _ =

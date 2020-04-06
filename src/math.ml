@@ -51,3 +51,28 @@ let moveToward incT moveRate (tx,ty) (atX,atY) =
     ( atX +. (incT *. moveX *. moveRate)
     , atY +. (incT *. moveY *. moveRate)
     )
+
+let rec shuffle n arr =
+  let l = Array.length arr in
+  if n <= 0 then
+    arr
+  else if l == 0 then
+    arr
+  else
+    let newArr = Array.init l (Array.get arr) in
+    let _ =
+      for i = 0 to l - 1 do
+        let j = int_of_float ((float_of_int l) *. (random ())) in
+        let t = Array.get newArr i in
+        let s = Array.get newArr j in
+        let _ = Array.set newArr j t in
+        Array.set newArr i s
+      done
+    in
+    shuffle (n - 1) newArr
+
+let rec range s e =
+  if s >= e then
+    []
+  else
+    s :: (range (s+1) e)

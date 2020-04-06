@@ -29,5 +29,3 @@ type minigame =
   ; score : float
   ; outcome : gameOutcome option
   }
-
-let boardSize = 15

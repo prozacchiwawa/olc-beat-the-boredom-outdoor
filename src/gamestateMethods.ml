@@ -233,9 +233,7 @@ let runGame game' keys ts =
         let altitude = Array.get game.world.groundData (py * game.world.groundX + px) in
         let altitudeBlock = int_of_float (altitude *. 7.0) in
         { game with
-          mode =
-            FirstPerson
-              (FirstPersonMethods.generateWithDef FirstPersonMethods.badMinigameDef altitudeBlock FirstPersonMethods.emptyMinigame)
+          mode = FirstPerson (FirstPersonMethods.makeMazeDef altitudeBlock)
         }
       | Camp -> { game with mode = CampScreen }
     else if downPressed then
