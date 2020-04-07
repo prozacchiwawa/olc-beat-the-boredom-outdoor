@@ -39,6 +39,25 @@ let coordOf i =
   let x = i mod boardSize in
   (x,y)
 
+let rec generateAnimals n minigame =
+  let squareChoice =
+    int_of_float @@ (float_of_int (boardSize * boardSize)) *. (Math.random ())
+  in
+  let choiceAtN = Array.get minigame.values squareChoice in
+  if n <= 0 then
+    minigame
+  else if choiceAtN <> None then
+    generateAnimals n minigame
+  else
+    let x = (float_of_int (squareChoice mod boardSize)) +. 0.5 in
+    let y = (float_of_int (squareChoice / boardSize)) +. 0.5 in
+    let
+      animal = { kind = Wolf ; x = x ; y = y }
+    in
+    { minigame with
+      actors = animal :: minigame.actors
+    }
+
 let isEntrance = function
   | Some (Entrance _) -> true
   | _ -> false
@@ -221,29 +240,33 @@ let draw state minigame =
 let moveDist = 10.0
 let rotDist = 5.0
 
-let handleMove amt minigame =
-  let (vx,vy) = viewDirection (minigame.playerDir +. (Math.pi /. 2.0)) in
-  let px =
-    max 0.0 (min (float_of_int boardSize) (minigame.playerX +. (vx *. amt *. moveDist)))
+let oneFrame moveAmt rotAmt minigame =
+  let handleMove amt minigame =
+    let (vx,vy) = viewDirection (minigame.playerDir +. (Math.pi /. 2.0)) in
+    let px =
+      max 0.0 (min (float_of_int boardSize) (minigame.playerX +. (vx *. amt *. moveDist)))
+    in
+    let py =
+      max 0.0 (min (float_of_int boardSize) (minigame.playerY +. (vy *. amt *. moveDist)))
+    in
+    let idx = indexOf (int_of_float px) (int_of_float py) in
+    let whatsThere = Array.get minigame.values idx in
+    let updated =
+      { minigame with
+        playerX = px
+      ; playerY = py
+      }
+    in
+    match whatsThere with
+    | Some Exit -> { updated with outcome = Some { foodAdj = minigame.score } }
+    | Some Entrance -> updated
+    | Some _ -> minigame
+    | _ -> updated
   in
-  let py =
-    max 0.0 (min (float_of_int boardSize) (minigame.playerY +. (vy *. amt *. moveDist)))
-  in
-  let idx = indexOf (int_of_float px) (int_of_float py) in
-  let whatsThere = Array.get minigame.values idx in
-  let updated =
+  let handleRot amt minigame =
     { minigame with
-      playerX = px
-    ; playerY = py
+      playerDir = minigame.playerDir +. (amt *. rotDist)
     }
   in
-  match whatsThere with
-  | Some Exit -> { updated with outcome = Some { foodAdj = minigame.score } }
-  | Some Entrance -> updated
-  | Some _ -> minigame
-  | _ -> updated
-
-let handleRot amt minigame =
-  { minigame with
-    playerDir = minigame.playerDir +. (amt *. rotDist)
-  }
+  let minigame = handleRot rotAmt @@ handleMove moveAmt minigame in
+  minigame

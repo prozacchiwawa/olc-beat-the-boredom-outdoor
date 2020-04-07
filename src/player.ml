@@ -8,7 +8,5 @@ type player =
 
   ; food : float
 
-  ; knowledge : know list
-
   ; health : float
   }

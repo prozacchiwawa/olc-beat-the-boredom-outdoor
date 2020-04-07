@@ -21,8 +21,6 @@ let newPlayer () =
 
   ; food = 1.0
 
-  ; knowledge = []
-
   ; health = 1.0
   }
 

@@ -4,6 +4,12 @@ type game
   = Wolf
   | Deer
 
+type activeGame =
+  { kind : game
+  ; x : float
+  ; y : float
+  }
+
 type item
   = Spear
 
@@ -21,7 +27,7 @@ type gameOutcome =
 
 type minigame =
   { values : boardSquare option array
-  ; actors : game list
+  ; actors : activeGame list
   ; objects : item list
   ; playerX : float
   ; playerY : float

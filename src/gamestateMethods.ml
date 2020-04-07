@@ -269,13 +269,12 @@ let runGame game' keys ts =
     let game = runDayCycle game (ts -. lastTs) in
     let worldTime = game.worldTime in
     let timeInc = worldTime -. lastWorldTime in
-    let downPressed = StringSet.mem "ARROWDOWN" keys in
-    let upPressed = StringSet.mem "ARROWUP" keys in
-    let leftPressed = StringSet.mem "ARROWLEFT" keys in
-    let rightPressed = StringSet.mem "ARROWRIGHT" keys in
-    let fpMoveForward m = FirstPersonMethods.handleMove (timeInc *. m) in
-    let fpRotate m = FirstPersonMethods.handleRot (timeInc *. m) in
-    let ident = fun x -> x in
+    let downPressed = if StringSet.mem "ARROWDOWN" keys then -1.0 else 0.0 in
+    let upPressed = if StringSet.mem "ARROWUP" keys then 1.0 else 0.0 in
+    let leftPressed = if StringSet.mem "ARROWLEFT" keys then -1.0 else 0.0 in
+    let rightPressed = if StringSet.mem "ARROWRIGHT" keys then 1.0 else 0.0 in
+    let moveAmt = timeInc *. (downPressed +. upPressed) in
+    let rotAmt = timeInc *. (leftPressed +. rightPressed) in
     match mg.outcome with
     | Some o ->
       let newPlayer =
@@ -286,11 +285,5 @@ let runGame game' keys ts =
       ; player = newPlayer
       }
     | _ ->
-      let minigame =
-        mg
-        |> (if downPressed then fpMoveForward (-1.0) else ident)
-        |> (if upPressed then fpMoveForward 1.0 else ident)
-        |> (if leftPressed then fpRotate (-1.0) else ident)
-        |> (if rightPressed then fpRotate 1.0 else ident)
-      in
+      let minigame = FirstPersonMethods.oneFrame moveAmt rotAmt mg in
       { game with mode = FirstPerson minigame }
