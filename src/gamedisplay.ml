@@ -53,7 +53,12 @@ let drawFirstPersonBackdrop state =
     else
       state.game.weather
   in
-  let groundPalette = groundPaletteByTimeOfDay gndWeather state.game.timeOfDay in
+  let groundPalette =
+    if biome == 0 then
+      getPaletteByTimeOfDay seaGroundPalette state.game.timeOfDay
+    else
+      groundPaletteByTimeOfDay gndWeather state.game.timeOfDay
+  in
   let skySteps = Array.length skyPalette in
   let groundSteps = Array.length groundPalette in
   (* Final sky color *)

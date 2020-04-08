@@ -94,6 +94,34 @@ let pathDef =
    ; { color = ( 0,2) ; row = "     xxxxxxxxxxx     " }
   |]
 
+let waterDef =
+  [| { color = ( 0,4) ; row = "                     " }
+   ; { color = ( 0,4) ; row = "                     " }
+   ; { color = ( 0,4) ; row = "                     " }
+   ; { color = ( 0,4) ; row = "                     " }
+   ; { color = ( 0,4) ; row = "                     " }
+   ; { color = ( 0,4) ; row = "                     " }
+   ; { color = ( 0,4) ; row = "                     " }
+   ; { color = ( 0,4) ; row = "                     " }
+   ; { color = ( 0,4) ; row = "                     " }
+   ; { color = ( 9,3) ; row = "      xxxxxxxxx      " }
+   ; { color = ( 9,2) ; row = "     xxxxxxxxxxx     " }
+  |]
+
+let lilypadDef =
+  [| { color = ( 0,4) ; row = "                     " }
+   ; { color = ( 0,4) ; row = "                     " }
+   ; { color = ( 0,4) ; row = "                     " }
+   ; { color = ( 0,4) ; row = "                     " }
+   ; { color = ( 0,4) ; row = "                     " }
+   ; { color = ( 1,7) ; row = "          x          " }
+   ; { color = ( 0,7) ; row = "         xxx         " }
+   ; { color = (11,4) ; row = "          x          " }
+   ; { color = (11,3) ; row = "    xx    x    xx    " }
+   ; { color = (11,2) ; row = "     xxxxxxxxxxx     " }
+   ; { color = (11,1) ; row = "      xxxxxxxxx      " }
+  |]
+
 let entranceDef =
   [| { color = ( 2,7) ; row = "             " }
    ; { color = ( 2,7) ; row = "             " }
@@ -508,12 +536,14 @@ let ruinSprite = compileSprite ruinSpriteDef
 let workerSprite = compileSprite workerSpriteDef
 let deadWorkerSprite = compileSprite deadWorkerSpriteDef
 let targetSprite = compileSprite targetDef
+let lilypadSprite = compileSprite lilypadDef
 let plantSprite = compileSprite plantDef
 let rockSprite = compileSprite rockDef
 let treeSprite = compileSprite treeDef
 let entranceSprite = compileSprite entranceDef
 let exitSprite = compileSprite exitDef
 let pathSprite = compileSprite pathDef
+let waterSprite = compileSprite waterDef
 let wolfSprite = compileSprite wolfDef
 
 let spriteForLetter ch =

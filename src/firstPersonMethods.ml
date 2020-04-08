@@ -5,8 +5,11 @@ open FirstPerson
 
 let emptyMinigame =
   { values = Array.make (boardSize * boardSize) None
+  ; towardExit = Array.make (boardSize * boardSize) None
   ; actors = []
   ; objects = []
+  ; roomMap = IPointMap.empty
+  ; towardRoom = IPointMap.empty
   ; playerX = 7.5
   ; playerY = 15.5
   ; playerDir = 0.0
@@ -51,7 +54,7 @@ let rec generateAnimals n minigame =
   else
     let x = (float_of_int (squareChoice mod boardSize)) +. 0.5 in
     let y = (float_of_int (squareChoice / boardSize)) +. 0.5 in
-    let animal = { kind = Wolf ; x = x ; y = y } in
+    let animal = { kind = Wolf { time = 0.0 ; attitude = WolfStalk } ; x = x ; y = y } in
     generateAnimals (n-1) { minigame with actors = animal :: minigame.actors }
 
 let isEntrance = function
@@ -83,16 +86,22 @@ let getFreeLocations minigame =
   in
   !res
 
-let numRoomCenters = 7
+let numRoomCenters = 11
 
 let makeMazeDef biome =
-  let defaultObject =
-    match biome with
-    | 3 -> Tree
-    | 4 -> Tree
-    | 5 -> Rock
-    | 6 -> Rock
-    | _ -> Plant
+  let blockObject () =
+    let o =
+      match biome with
+      | 0 -> Math.randomlyChooseInOrder 0.5 [Lilypad; Plant]
+      | 1 -> Math.randomlyChooseInOrder 0.5 [Plant; Plant; Tree; Lilypad]
+      | 2 -> Math.randomlyChooseInOrder 0.5 [Plant; Rock; Tree]
+      | 3 -> Math.randomlyChooseInOrder 0.5 [Tree; Plant; Plant; Rock]
+      | 4 -> Math.randomlyChooseInOrder 0.5 [Tree; Tree; Plant; Rock]
+      | 5 -> Math.randomlyChooseInOrder 0.5 [Rock; Tree; Tree; Plant]
+      | 6 -> Math.randomlyChooseInOrder 0.5 [Rock; Tree; Rock; Plant]
+      | _ -> None
+    in
+    o |> optionElse (fun _ -> Plant)
   in
   let roomSeeds = emptyRoomDesign numRoomCenters in
   let rs = Rooms.makeRandomBoard boardSize roomSeeds in
@@ -107,7 +116,7 @@ let makeMazeDef biome =
              else if rs.exit = pt then
                Some Exit
              else if IPointSet.mem pt rs.wallSet then
-               Some defaultObject
+               Some (blockObject ())
              else
                None
           )
@@ -174,19 +183,23 @@ let rotateCoords dir (px,py) =
   (x,y)
 
 let chooseDecoSprite = function
+  | Board Lilypad -> SpriteDefs.lilypadSprite
   | Board Plant -> SpriteDefs.plantSprite
   | Board Rock -> SpriteDefs.rockSprite
   | Board Tree -> SpriteDefs.treeSprite
   | Board Entrance -> SpriteDefs.entranceSprite
   | Board Exit -> SpriteDefs.exitSprite
+  | Board Water -> SpriteDefs.waterSprite
   | Board Path -> SpriteDefs.pathSprite
-  | Actor Wolf -> SpriteDefs.wolfSprite
+  | Actor (Wolf _) -> SpriteDefs.wolfSprite
 
 let spriteWidth = 8.0
 
 let draw state minigame =
-  let antiR = minigame.playerDir *. (-1.0) in
-  let pp = (minigame.playerX, minigame.playerY) in
+  let (px,py) = (int_of_float state.game.player.x, int_of_float state.game.player.y) in
+  let idx = (py * state.game.world.groundX) + px in
+  let altitude = Array.get state.game.world.groundData idx in
+  let biome = int_of_float @@ altitude *. 7.0 in
   let objectsOnGrid =
     minigame.values
     |> Array.mapi
@@ -195,7 +208,7 @@ let draw state minigame =
          let (ax,ay) = ((float_of_int atX) +. 0.5, (float_of_int atY) +. 0.5) in
          match v with
          | Some obj -> ((ax, ay), Board obj)
-         | _ -> ((ax, ay), Board Path)
+         | _ -> ((ax, ay), if biome < 1 then Board Water else Board Path)
       )
   in
   let animals =
@@ -241,9 +254,20 @@ let draw state minigame =
 let moveDist = 10.0
 let rotDist = 5.0
 
-(* Wolves pack up and attack the player by encircling him and attacking. *)
-let oneFrameWolf minigame wolf =
-  wolf
+(* For now, wolves try to achieve a certain distance range from the player, then rush in and
+ * attack.
+*)
+let oneFrameWolf minigame animal wolf =
+  match wolf.attitude with
+  | WolfScared ->
+    (* Try to run from player, toward the exit *)
+    animal
+  | WolfStalk -> animal
+  | WolfAttack -> animal
+
+let oneFrameAnimal minigame animal =
+  match animal.kind with
+  | Wolf wolfState -> oneFrameWolf minigame animal wolfState
 
 let oneFrame moveAmt rotAmt minigame =
   let handleMove amt minigame =
