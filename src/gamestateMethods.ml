@@ -304,5 +304,5 @@ let runGame game' keys ts =
       ; player = newPlayer
       }
     | _ ->
-      let minigame = FirstPersonMethods.oneFrame moveAmt rotAmt mg in
+      let minigame = FirstPersonMethods.oneFrame timeInc moveAmt rotAmt mg in
       { game with mode = FirstPerson minigame }

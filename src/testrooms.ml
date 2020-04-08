@@ -1,6 +1,14 @@
 open Contypes
 open Rooms
 open Astar
+open Walkpath
+
+module RoomSpacialState = struct
+  type t = roomDesign
+  let blocked (x,y) rooms = IPointSet.mem (x,y) rooms.wallSet
+end
+
+module RoomAStarRouter = AStarSpacial(RoomSpacialState)
 
 let rec chooseRandomUnblockedPoint rooms =
   let idx = int_of_float ((float_of_int (boardSize * boardSize)) *. (Math.random ())) in
@@ -16,7 +24,7 @@ let main _ =
   let _ = Js.log @@ stringOfRooms filledRooms in
   let (sx,sy) = chooseRandomUnblockedPoint filledRooms in
   let (ex,ey) = chooseRandomUnblockedPoint filledRooms in
-  let path = makeRoomPath filledRooms (sx,sy) (ex,ey) in
+  let path = RoomAStarRouter.makePath filledRooms (sx,sy) (ex,ey) in
   Js.log path
 
 let _ = main ()

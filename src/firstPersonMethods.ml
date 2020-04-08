@@ -1,7 +1,15 @@
 open Contypes
 open Rooms
 open Allstate
+open Walkpath
 open FirstPerson
+
+module FirstPersonAStar = struct
+  type t = minigame
+  let blocked (x,y) minigame = Array.get minigame.values ((y * boardSize) + x) <> None
+end
+
+module FirstPersonAStarRouter = AStarSpacial(FirstPersonAStar)
 
 let emptyMinigame =
   { values = Array.make (boardSize * boardSize) None
@@ -13,6 +21,7 @@ let emptyMinigame =
   ; playerDir = 0.0
   ; score = 0.0
   ; outcome = None
+  ; realTime = 0.0
   }
 
 let indexOf x y = ((y mod boardSize) * boardSize) + (x mod boardSize)
@@ -40,20 +49,40 @@ let coordOf i =
   let x = i mod boardSize in
   (x,y)
 
-let rec generateAnimals n minigame =
+let rec chooseRandomEmpty minigame =
   let squareChoice =
     int_of_float @@ (float_of_int (boardSize * boardSize)) *. (Math.random ())
   in
   let choiceAtN = Array.get minigame.values squareChoice in
-  if n <= 0 then
-    minigame
-  else if choiceAtN <> None then
-    generateAnimals n minigame
+  if choiceAtN <> None then
+    chooseRandomEmpty minigame
   else
     let x = (float_of_int (squareChoice mod boardSize)) +. 0.5 in
     let y = (float_of_int (squareChoice / boardSize)) +. 0.5 in
-    let animal = { kind = Wolf { time = 0.0 ; attitude = WolfStalk } ; x = x ; y = y } in
-    generateAnimals (n-1) { minigame with actors = animal :: minigame.actors }
+    (x,y)
+
+let stalkTime = 1.0
+
+let rec generateAnimals n minigame =
+  let (x,y) = chooseRandomEmpty minigame in
+  let (sx,sy) = chooseRandomEmpty minigame in
+  let nextChoice = minigame.realTime +. stalkTime in
+  let animal =
+    { kind =
+        Wolf
+          { time = 0.0
+          ; attitude =
+              WolfStalk
+                ( int_of_float sx
+                , int_of_float sy
+                , minigame.realTime +. stalkTime
+                )
+          }
+    ; x = x
+    ; y = y
+    }
+  in
+  generateAnimals (n-1) { minigame with actors = animal :: minigame.actors }
 
 let isEntrance = function
   | Some (Entrance _) -> true
@@ -251,31 +280,71 @@ let draw state minigame =
 
 let moveDist = 10.0
 let rotDist = 5.0
+let animalWantDistance = [7.0;6.0;5.0;4.0;3.0;2.0;1.0]
 
-(* Choose a path starting at ax,ay that maximizes distance from the player in n blocks *)
-let pathAwayFromPlayer n (px,py) (ax,ay) =
-  []
+let walkPointOut minigame (ax,ay) (px,py) distanceToPlayer =
+  let rec checkScaledMove awds =
+    match awds with
+    | [] -> None
+    | awd::tl ->
+      let scaledMoveTargetX =
+        ax +. (px /. distanceToPlayer *. awd)
+      in
+      let scaledMoveTargetY =
+        ay +. (py /. distanceToPlayer *. awd)
+      in
+      let pathTo =
+        FirstPersonAStarRouter.makePath
+          minigame
+          (int_of_float px,int_of_float py)
+          (int_of_float scaledMoveTargetX,int_of_float scaledMoveTargetY)
+      in
+      match pathTo with
+      | None -> checkScaledMove tl
+      | Some p -> Some p
+  in
+  checkScaledMove animalWantDistance
+
+let scaredRate = 12.0
+
+let walkToward incT moveRate (px,py) animal =
+  Math.moveToward incT moveRate (px,py) (animal.x,animal.y)
 
 (* For now, wolves try to achieve a certain distance range from the player, then rush in and
  * attack.
 *)
-let oneFrameWolf minigame animal wolf =
+let rec oneFrameWolf incT minigame animal wolf =
   match wolf.attitude with
-  | WolfScared ->
-    (* Try to run from player *)
-    animal
-  | WolfStalk ->
+  | WolfScared f ->
+    begin
+      (* Try to run from player *)
+      let playerVsWolfX = animal.x -. minigame.playerX in
+      let playerVsWolfY = animal.y -. minigame.playerY in
+      let distanceToPlayer = Math.distance (0.0,0.0) (playerVsWolfX,playerVsWolfY) in
+      let pathToPoint =
+        walkPointOut minigame (animal.x,animal.y) (playerVsWolfX,playerVsWolfY) distanceToPlayer
+      in
+      match pathToPoint with
+      | Some arr ->
+        if Array.length arr > 1 then
+          let (nx,ny) = walkToward incT scaredRate (Array.get arr 1) animal in
+          { animal with x = nx ; y = ny }
+        else
+          oneFrameWolf incT minigame animal { wolf with attitude = WolfAttack }
+      | _ -> oneFrameWolf incT minigame animal { wolf with attitude = WolfAttack }
+    end
+  | WolfStalk (x,y,t) ->
     (* Walk around our room trying to get line of sight to player *)
     animal
   | WolfAttack ->
     (* Run toward the player at an accelerated rate and deal damage on adjacent tile *)
     animal
 
-let oneFrameAnimal minigame animal =
+let oneFrameAnimal incT minigame animal =
   match animal.kind with
-  | Wolf wolfState -> oneFrameWolf minigame animal wolfState
+  | Wolf wolfState -> oneFrameWolf incT minigame animal wolfState
 
-let oneFrame moveAmt rotAmt minigame =
+let oneFrame incT moveAmt rotAmt minigame =
   let handleMove amt minigame =
     let (vx,vy) = viewDirection (minigame.playerDir +. (Math.pi /. 2.0)) in
     let px =
@@ -290,6 +359,7 @@ let oneFrame moveAmt rotAmt minigame =
       { minigame with
         playerX = px
       ; playerY = py
+      ; realTime = minigame.realTime +. incT
       }
     in
     match whatsThere with
@@ -304,4 +374,6 @@ let oneFrame moveAmt rotAmt minigame =
     }
   in
   let minigame = handleRot rotAmt @@ handleMove moveAmt minigame in
-  minigame
+  { minigame with
+    actors = List.map (oneFrameAnimal incT minigame) minigame.actors
+  }

@@ -1,8 +1,8 @@
 open Contypes
 
 type wolfAttitude
-  = WolfScared
-  | WolfStalk
+  = WolfScared of float
+  | WolfStalk of (int * int * float)
   | WolfAttack
 
 type wolfState =
@@ -53,6 +53,7 @@ type minigame =
   ; playerDir : float
   ; score : float
   ; outcome : gameOutcome option
+  ; realTime : float
   }
 
 let numAnimals = 6

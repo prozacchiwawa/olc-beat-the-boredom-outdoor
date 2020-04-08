@@ -10,47 +10,6 @@ type roomDesign =
   ; exit : int * int
   }
 
-type roomAStarState =
-  { x : int
-  ; y : int
-  ; parent : roomDesign
-  }
-
-module RoomAStarOrd = struct
-  type t = roomAStarState
-  let compare a b = Pervasives.compare (a.x,a.y) (b.x,b.y)
-  let win a b = (a.x,a.y) = (b.x,b.y)
-  let infinity = 1000000.0
-  let neighbors t =
-    let (x,y) = (t.x,t.y) in
-    [(x,y+1);(x,y-1);(x+1,y);(x-1,y);(x-1,y-1);(x+1,y-1);(x-1,y+1);(x+1,y+1)]
-    |> List.filter (fun (x,y) -> not @@ IPointSet.mem (x,y) t.parent.wallSet)
-    |> List.map (fun (x,y) -> { t with x = x ; y = y })
-end
-
-module RoomAStar = Astar.Make(RoomAStarOrd)
-
-let makeRoomPath filledRooms (sx,sy) (ex,ey) =
-  let df s e =
-    Math.distance (Math.toFloatPoint (s.x,s.y)) (Math.toFloatPoint (e.x,e.y))
-  in
-  let goalPoint = { x = ex ; y = ey ; parent = filledRooms } in
-  let path =
-    RoomAStar.route
-      { x = sx ; y = sy ; parent = filledRooms }
-      goalPoint
-      (df goalPoint) df
-  in
-  match path with
-  | None -> None
-  | Some p ->
-    let path =
-      p
-      |> List.map (fun (t : roomAStarState) -> (t.x,t.y))
-      |> Array.of_list
-    in
-    Some path
-
 let stringOfRoomIdx x y rooms =
   let ptl =
     rooms.seedSets
