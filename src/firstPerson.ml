@@ -26,6 +26,7 @@ type displayable
 
 type gameOutcome =
   { foodAdj : float
+  ; win : bool
   }
 
 type minigame =

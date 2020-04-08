@@ -11,10 +11,9 @@ type menuChoice
   = Resume
   | ChooseLocation
   | Encounter
-  | Camp
 
 let menuChoices =
-  [ Resume; ChooseLocation; Encounter; Camp ]
+  [ Resume; ChooseLocation; Encounter ]
 
 type interactionState
   = Running
@@ -26,7 +25,6 @@ type gameMode
   = HomeScreen
   | GameOverScreen of float
   | MapScreen of interactionState
-  | CampScreen
   | FirstPerson of FirstPerson.minigame
 
 type gamestate =

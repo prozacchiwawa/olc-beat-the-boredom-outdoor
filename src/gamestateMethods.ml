@@ -222,11 +222,12 @@ let runGame game' keys ts =
       match choice with
       | Resume -> { game with mode = MapScreen Running }
       | ChooseLocation ->
-        { game with
-          mode =
-            MapScreen
-              (ChoosingLocation (int_of_float game.player.x, int_of_float game.player.y))
-        }
+        let pt =
+          match game.player.target with
+          | Some pt -> pt
+          | None -> (int_of_float game.player.x, int_of_float game.player.y)
+        in
+        { game with mode = MapScreen (ChoosingLocation pt) }
       | Encounter ->
         let px = int_of_float game.player.x in
         let py = int_of_float game.player.y in
@@ -235,13 +236,19 @@ let runGame game' keys ts =
         { game with
           mode = FirstPerson (FirstPersonMethods.makeMazeDef altitudeBlock)
         }
-      | Camp -> { game with mode = CampScreen }
-    else if downPressed then
-      { game with mode = MapScreen (PauseMenu (Math.nextOf choice menuChoices)) }
-    else if upPressed then
-      { game with mode = MapScreen (PauseMenu (Math.prevOf choice menuChoices)) }
     else
-      game
+      let f =
+        if downPressed then Math.nextOf else if upPressed then Math.prevOf else (fun a _ -> a)
+      in
+      let newMode = f choice menuChoices in
+      let newMode =
+        if newMode == Encounter && game.player.target == None then
+          f newMode menuChoices
+        else
+          newMode
+      in
+      { game with mode = MapScreen (PauseMenu newMode) }
+
   | MapScreen (ChoosingLocation (lx,ly)) ->
     if spacePressed then
       { game with
@@ -259,11 +266,6 @@ let runGame game' keys ts =
       { game with mode = MapScreen (PauseMenu Resume) }
     else
       oneFrame game (ts -. lastTs)
-  | CampScreen ->
-    if spacePressed then
-      { game with mode = MapScreen Running }
-    else
-      game
   | FirstPerson mg ->
     let lastWorldTime = game.worldTime in
     let game = runDayCycle game (ts -. lastTs) in
@@ -275,10 +277,15 @@ let runGame game' keys ts =
     let rightPressed = if StringSet.mem "ARROWRIGHT" keys then 1.0 else 0.0 in
     let moveAmt = timeInc *. (downPressed +. upPressed) in
     let rotAmt = timeInc *. (leftPressed +. rightPressed) in
-    match mg.outcome with
-    | Some o ->
+    match (mg.outcome, game.player.target) with
+    | (Some o, Some (tx,ty)) ->
+      let (tx,ty) = ((float_of_int tx) +. 0.5, (float_of_int ty) +. 0.5) in
       let newPlayer =
-        { game.player with food = game.player.food +. o.foodAdj }
+        { game.player with
+          food = game.player.food +. o.foodAdj
+        ; x = if o.win then tx else game.player.x
+        ; y = if o.win then ty else game.player.y
+        }
       in
       { game with
         mode = MapScreen (MiniVictory (game.realTime +. 500.0))

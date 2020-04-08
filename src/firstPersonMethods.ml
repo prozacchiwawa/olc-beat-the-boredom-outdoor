@@ -263,7 +263,7 @@ let oneFrame moveAmt rotAmt minigame =
       }
     in
     match whatsThere with
-    | Some Exit -> { updated with outcome = Some { foodAdj = minigame.score } }
+    | Some Exit -> { updated with outcome = Some { foodAdj = minigame.score ; win = true } }
     | Some Entrance -> updated
     | Some _ -> minigame
     | _ -> updated

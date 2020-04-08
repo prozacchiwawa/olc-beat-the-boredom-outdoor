@@ -1,10 +1,8 @@
-open Knowledge
-
 type player =
   { x : float
   ; y : float
 
-  ; target : (int * int)
+  ; target : (int * int) option
 
   ; food : float
 

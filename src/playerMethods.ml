@@ -17,16 +17,29 @@ let newPlayer () =
   { x = ((float_of_int worldSide) /. 2.0) +. 0.5
   ; y = ((float_of_int worldSide) /. 2.0) +. 0.5
 
-  ; target = (worldSide / 2, worldSide / 2)
+  ; target = None
 
   ; food = 1.0
 
   ; health = 1.0
   }
 
-let setTargetLocation tgt player = { player with target = tgt }
+let setTargetLocation tgt player = { player with target = Some tgt }
 
 let moveCloserToTarget game incT player =
-  let moveRate = getCurrentPlayerMoveRate game.weather in
-  let (newX,newY) = Math.moveToward incT moveRate player.target (player.x,player.y) in
-  { player with x = newX ; y = newY }
+  match player.target with
+  | Some (tx,ty) ->
+    let moveRate = getCurrentPlayerMoveRate game.weather in
+    let (newX,newY) = Math.moveToward incT moveRate (tx,ty) (player.x,player.y) in
+    let newTarget = 
+      if (int_of_float newX, int_of_float newY) = (tx,ty) then
+        None
+      else
+        Some (tx,ty)
+    in
+    { player with
+      x = newX
+    ; y = newY
+    ; target = newTarget
+    }
+  | _ -> player

@@ -211,32 +211,45 @@ let drawCityStatus state (city : City.city) =
   in
   res
 
+let drawMoveTarget (x,y) state =
+  let (cx,cy) = worldPositionToScreen state (float_of_int x) (float_of_int y) in
+  Sprite.drawSpriteCenter
+    state.spec
+    SpriteDefs.targetSprite
+    cx
+    cy
+    (SpriteDefs.targetSprite.width * 2)
+    (SpriteDefs.targetSprite.height * 2)
+
 let drawMiscHud state =
   match state.game.mode with
   | MapScreen Running ->
-    drawUpperRightStatus state @@ Printf.sprintf "Running: %s" @@ Weather.weatherToString state.game.weather
-  | MapScreen (ChoosingLocation (x,y)) ->
     let _ =
-      let (cx,cy) =
-        worldPositionToScreen state (float_of_int x) (float_of_int y)
-      in
-      Sprite.drawSpriteCenter
-        state.spec
-        SpriteDefs.targetSprite
-        cx
-        cy
-        (SpriteDefs.targetSprite.width * 2)
-        (SpriteDefs.targetSprite.height * 2)
+      drawUpperRightStatus state @@ Printf.sprintf "Running: %s" @@
+      Weather.weatherToString state.game.weather
     in
+    begin
+      match state.game.player.target with
+      | Some tgt -> drawMoveTarget tgt state
+      | _ -> ()
+    end
+  | MapScreen (ChoosingLocation (x,y)) ->
+    let _ = drawMoveTarget (x,y) state in
     drawUpperRightStatus state @@ Printf.sprintf "Choose location (%d,%d)" x y
   | MapScreen (PauseMenu choice) ->
-    let choiceColor ch = if ch = choice then "yellow" else "white" in
+    let choiceColor ch =
+      if ch = choice then
+        "yellow"
+      else
+        match (ch, state.game.player.target) with
+        | (Encounter, None) -> stringOfColor @@ colorOfCoord (0,1)
+        | _ -> "white"
+    in
     let _ =
       Menu.drawMenu state.spec
         [ { color = choiceColor Resume         ; str = "Resume" }
         ; { color = choiceColor ChooseLocation ; str = "Change Target" }
         ; { color = choiceColor Encounter      ; str = "Hard Travel" }
-        ; { color = choiceColor Camp           ; str = "Camp" }
         ]
     in
     drawUpperRightStatus state "Select..."
@@ -247,8 +260,6 @@ let drawMiscHud state =
       ]
   | HomeScreen -> ()
   | GameOverScreen _ -> ()
-  | CampScreen ->
-    drawUpperRightStatus state "Camp"
   | FirstPerson mg ->
     drawUpperRightStatus state @@
     Printf.sprintf "First Person %f:%f v %f" mg.playerX mg.playerY mg.playerDir
@@ -317,11 +328,6 @@ let displayScreen state =
   | Gamestate.MapScreen _ ->
     let _ = drawMapScreen state in
     drawHud state
-  | Gamestate.CampScreen ->
-    let _ = drawFirstPersonBackdrop state in
-    let _ = drawHud state in
-    Menu.drawMenu state.spec
-      [ { color = "yellow" ; str = "CampScreen" } ]
   | Gamestate.FirstPerson mg ->
     let _ = drawFirstPersonBackdrop state in
     let _ = FirstPersonMethods.draw state mg in
