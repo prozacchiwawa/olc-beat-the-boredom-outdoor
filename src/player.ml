@@ -5,6 +5,5 @@ type player =
   ; target : (int * int) option
 
   ; food : float
-
-  ; health : float
+  ; injured : float
   }

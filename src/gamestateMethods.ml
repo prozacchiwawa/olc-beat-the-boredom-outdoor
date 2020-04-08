@@ -34,6 +34,7 @@ let startingCities = 4
 let hardTravelDistance = 7.0
 let travelFoodGained = 30.0
 let foodTransferRate = 100.0
+let injuryTime = 0.75
 
 let addCity city game =
   { game with cities = StringMap.add city.name city game.cities }
@@ -300,7 +301,8 @@ let runGame game' keys ts =
       in
       let newPlayer =
         { game.player with
-          food = game.player.food +. o.foodAdj
+          food = max 0.0 (game.player.food +. o.foodAdj)
+        ; injured = if o.win then 0.0 else game.realTime +. injuryTime
         ; x = if o.win then tx else game.player.x
         ; y = if o.win then ty else game.player.y
         }
