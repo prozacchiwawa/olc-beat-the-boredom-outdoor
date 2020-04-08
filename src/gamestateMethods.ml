@@ -140,7 +140,7 @@ let offloadFood timeInc game =
   in
   match nearbyCities with
   | (_,c)::_ ->
-    let amountOfFoodToGive = max game.player.food (timeInc *. foodTransferRate) in
+    let amountOfFoodToGive = min game.player.food (timeInc *. foodTransferRate) in
     let updatedPlayer =
       { game.player with food = game.player.food -. amountOfFoodToGive }
     in

@@ -6,6 +6,10 @@ open Canvas
 open Allstate
 open Gamepalette
 
+type cityHudPosition
+  = CityHudTop
+  | CityHudBottom
+
 let drawSkyGradient disp steps palette =
   let ctx = disp.context2d in
   for thisStep = 0 to (Array.length palette) - 1 do
@@ -150,11 +154,11 @@ let cityStatusLeft = 30
  * depending on player location
  *)
 let drawCityStatus state (city : City.city) =
-  let ystart =
+  let (res, ystart) =
     if state.game.player.y < float_of_int (worldSide / 2) then
-      state.spec.height - cityStatusHeight
+      (Some CityHudBottom, state.spec.height - cityStatusHeight)
     else
-      0
+      (Some CityHudTop, 0)
   in
   let yend = ystart + cityStatusHeight in
   let _ =
@@ -202,7 +206,10 @@ let drawCityStatus state (city : City.city) =
     fillStyleOfString @@ stringOfColor @@ colorOfCoord (3,4)
   in
   let popBarY = ystart + 5 + (oneUnit * 2) in
-  fillRect state.spec.context2d cityStatusLeft popBarY (int_of_float popWidth) ascent
+  let _ =
+    fillRect state.spec.context2d cityStatusLeft popBarY (int_of_float popWidth) ascent
+  in
+  res
 
 let drawMiscHud state =
   match state.game.mode with
@@ -263,34 +270,38 @@ let drawCityHud state =
         |> List.sort Pervasives.compare
       in
       match cities with
-      | [] -> ()
+      | [] -> None
       | (_,hd)::_ -> drawCityStatus state hd
     end
-  | _ -> ()
+  | _ -> None
 
 let drawSpriteString state x y str =
   let xInc = 12 in
-  let xStart = 12 in
-  let yStart = 12 in
   for i = 0 to (String.length str) - 1 do
     let sprite = SpriteDefs.spriteForLetter (String.get str i) in
     Sprite.drawSpriteCenter
       state.spec
       sprite
-      (xStart + (xInc * i))
-      yStart
+      (x + (xInc * i))
+      y
       (sprite.width * 2)
       (sprite.height * 2)
   done
 
-let drawPlayerHud state =
+let drawPlayerHud state chb =
+  let (xStart,yStart) =
+    match chb with
+    | Some CityHudTop ->
+      (12, state.spec.height - 12)
+    | _ -> (12,12)
+  in
   let playerDataStr = Printf.sprintf "Food: %3.0f" state.game.Gamestate.player.Player.food in
-  drawSpriteString state 0 0 playerDataStr
+  drawSpriteString state xStart yStart playerDataStr
 
 let drawHud state =
   drawMiscHud state ;
-  drawCityHud state ;
-  drawPlayerHud state
+  let chd = drawCityHud state in
+  drawPlayerHud state chd
 
 let displayScreen state =
   match state.game.mode with
