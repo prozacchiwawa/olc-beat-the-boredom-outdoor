@@ -114,6 +114,15 @@ let exitDef =
    ; { color = ( 0,7) ; row = "xx     xx" }
   |]
 
+let wolfDef =
+  [| { color = ( 2,0) ; row = "     x             x" }
+   ; { color = ( 2,0) ; row = "   xx  xxxxxxxxx  xx" }
+   ; { color = ( 2,0) ; row = " xxxxxxxxxxxxxxxxxxx" }
+   ; { color = ( 2,0) ; row = "xxxxx   xx  xxxxxx  " }
+   ; { color = ( 2,0) ; row = "xx      xx    xx    " }
+   ; { color = ( 2,0) ; row = "      xxx    xx     " }
+  |]
+
 let digit0 =
   [| { color = ( 0,7) ; row = " 000 " }
    ; { color = ( 0,6) ; row = "00 00" }
@@ -505,6 +514,7 @@ let treeSprite = compileSprite treeDef
 let entranceSprite = compileSprite entranceDef
 let exitSprite = compileSprite exitDef
 let pathSprite = compileSprite pathDef
+let wolfSprite = compileSprite wolfDef
 
 let spriteForLetter ch =
   let code = Char.code ch in

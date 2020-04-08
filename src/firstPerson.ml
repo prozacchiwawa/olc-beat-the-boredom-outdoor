@@ -2,7 +2,6 @@ open Contypes
 
 type game
   = Wolf
-  | Deer
 
 type activeGame =
   { kind : game
@@ -21,6 +20,10 @@ type boardSquare
   | Exit
   | Path
 
+type displayable
+  = Board of boardSquare
+  | Actor of game
+
 type gameOutcome =
   { foodAdj : float
   }
@@ -35,3 +38,5 @@ type minigame =
   ; score : float
   ; outcome : gameOutcome option
   }
+
+let numAnimals = 6

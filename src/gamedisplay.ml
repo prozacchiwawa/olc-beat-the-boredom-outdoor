@@ -30,9 +30,26 @@ let drawGroundGradient disp steps palette =
 
 let drawFirstPersonBackdrop state =
   let ctx = state.spec.context2d in
+  let (px,py) = (int_of_float state.game.player.x, int_of_float state.game.player.y) in
+  let biome =
+    int_of_float @@
+    (Array.get state.game.world.groundData ((py * state.game.world.groundX) + px)) *. 7.0
+  in
   let bgcolor = backgroundColor state.game.weather state.game.timeOfDay in
   let skyPalette = backgroundPaletteByTimeOfDay state.game.weather state.game.timeOfDay in
-  let groundPalette = groundPaletteByTimeOfDay state.game.weather state.game.timeOfDay in
+  let gndWeather =
+    if biome > 6 then
+      Weather.Snow
+    else if biome >= 5 &&
+            (state.game.weather == Snow ||
+             state.game.weather == Storm ||
+             state.game.weather == Rain)
+    then
+      Weather.Snow
+    else
+      state.game.weather
+  in
+  let groundPalette = groundPaletteByTimeOfDay gndWeather state.game.timeOfDay in
   let skySteps = Array.length skyPalette in
   let groundSteps = Array.length groundPalette in
   (* Final sky color *)

@@ -51,12 +51,8 @@ let rec generateAnimals n minigame =
   else
     let x = (float_of_int (squareChoice mod boardSize)) +. 0.5 in
     let y = (float_of_int (squareChoice / boardSize)) +. 0.5 in
-    let
-      animal = { kind = Wolf ; x = x ; y = y }
-    in
-    { minigame with
-      actors = animal :: minigame.actors
-    }
+    let animal = { kind = Wolf ; x = x ; y = y } in
+    generateAnimals (n-1) { minigame with actors = animal :: minigame.actors }
 
 let isEntrance = function
   | Some (Entrance _) -> true
@@ -117,6 +113,7 @@ let makeMazeDef biome =
           )
     }
   in
+  let minigame = generateAnimals numAnimals minigame in
   match findEntrance minigame with
   | Some (ex,ey) ->
     { minigame with
@@ -146,6 +143,7 @@ let generateWithDef minigameDef biome minigame =
          done
       ) minigameDef
   in
+  let minigame = generateAnimals numAnimals minigame in
   match findEntrance minigame with
   | Some (x,y) ->
     { minigame with playerX = (float_of_int x) +. 0.5 ; playerY = (float_of_int y) +. 0.5 }
@@ -176,12 +174,13 @@ let rotateCoords dir (px,py) =
   (x,y)
 
 let chooseDecoSprite = function
-  | Plant -> SpriteDefs.plantSprite
-  | Rock -> SpriteDefs.rockSprite
-  | Tree -> SpriteDefs.treeSprite
-  | Entrance -> SpriteDefs.entranceSprite
-  | Exit -> SpriteDefs.exitSprite
-  | Path -> SpriteDefs.pathSprite
+  | Board Plant -> SpriteDefs.plantSprite
+  | Board Rock -> SpriteDefs.rockSprite
+  | Board Tree -> SpriteDefs.treeSprite
+  | Board Entrance -> SpriteDefs.entranceSprite
+  | Board Exit -> SpriteDefs.exitSprite
+  | Board Path -> SpriteDefs.pathSprite
+  | Actor Wolf -> SpriteDefs.wolfSprite
 
 let spriteWidth = 8.0
 
@@ -189,31 +188,33 @@ let draw state minigame =
   let antiR = minigame.playerDir *. (-1.0) in
   let pp = (minigame.playerX, minigame.playerY) in
   let objectsOnGrid =
-    minigame.values |> Array.mapi
+    minigame.values
+    |> Array.mapi
       (fun i v ->
+         let (atX,atY) = coordOf i in
+         let (ax,ay) = ((float_of_int atX) +. 0.5, (float_of_int atY) +. 0.5) in
          match v with
-         | Some obj ->
-           let (atX,atY) = coordOf i in
-           let (ax,ay) =
-             ( (float_of_int (atX * 10)) +. 5.0 -. (minigame.playerX *. 10.0)
-             , (float_of_int (atY * 10)) +. 5.0 -. (minigame.playerY *. 10.0)
-             )
-           in
-           Some (rotateCoords minigame.playerDir (ax,ay), obj)
-         | _ ->
-           let (atX,atY) = coordOf i in
-           let (ax,ay) =
-             ( (float_of_int (atX * 10)) +. 5.0 -. (minigame.playerX *. 10.0)
-             , (float_of_int (atY * 10)) +. 5.0 -. (minigame.playerY *. 10.0)
-             )
-           in
-           Some (rotateCoords minigame.playerDir (ax,ay), Path)
+         | Some obj -> ((ax, ay), Board obj)
+         | _ -> ((ax, ay), Board Path)
       )
   in
+  let animals =
+    minigame.actors
+    |> List.map (fun a -> ((a.x,a.y), Actor a.kind))
+    |> Array.of_list
+  in
   let zz = (0.0,0.0) in
-  objectsOnGrid
+  Array.concat [ animals ; objectsOnGrid ]
+  |> Array.map
+    (fun ((atX,atY),obj) ->
+       let (ax,ay) =
+         ( (atX *. 10.0) -. (minigame.playerX *. 10.0)
+         , (atY *. 10.0) -. (minigame.playerY *. 10.0)
+         )
+       in
+      (rotateCoords minigame.playerDir (ax,ay), obj)
+    )
   |> Array.to_list
-  |> catOptions
   |> List.filter (fun ((_,ty),_) -> ty < -0.01)
   |> List.sort
     (fun (t1p,t1) (t2p,t2) ->
@@ -239,6 +240,9 @@ let draw state minigame =
 
 let moveDist = 10.0
 let rotDist = 5.0
+
+(* Wolves pack up and attack the player by encircling him and attacking. *)
+let oneFrameWolf minigame wolf = wolf
 
 let oneFrame moveAmt rotAmt minigame =
   let handleMove amt minigame =
