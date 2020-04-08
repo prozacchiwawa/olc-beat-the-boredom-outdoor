@@ -30,6 +30,27 @@ end
 
 module RoomAStar = Astar.Make(RoomAStarOrd)
 
+let makeRoomPath filledRooms (sx,sy) (ex,ey) =
+  let df s e =
+    Math.distance (Math.toFloatPoint (s.x,s.y)) (Math.toFloatPoint (e.x,e.y))
+  in
+  let goalPoint = { x = ex ; y = ey ; parent = filledRooms } in
+  let path =
+    RoomAStar.route
+      { x = sx ; y = sy ; parent = filledRooms }
+      goalPoint
+      (df goalPoint) df
+  in
+  match path with
+  | None -> None
+  | Some p ->
+    let path =
+      p
+      |> List.map (fun (t : roomAStarState) -> (t.x,t.y))
+      |> Array.of_list
+    in
+    Some path
+
 let stringOfRoomIdx x y rooms =
   let ptl =
     rooms.seedSets
