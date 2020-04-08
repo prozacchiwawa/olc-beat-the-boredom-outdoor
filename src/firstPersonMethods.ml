@@ -62,27 +62,38 @@ let rec chooseRandomEmpty minigame =
     (x,y)
 
 let stalkTime = 1.0
+let scaredTime = 0.7
+
+let beginStalking minigame animal =
+  let (x,y) = chooseRandomEmpty minigame in
+  (* Walk around our room trying to get line of sight to player *)
+  let pathToPoint =
+    FirstPersonAStarRouter.makePath
+      minigame
+      (int_of_float animal.x,int_of_float animal.y)
+      (int_of_float x,int_of_float y)
+  in
+  let attitude =
+    match pathToPoint with
+    | Some path ->
+      WolfStalk (List.rev (Array.to_list path), minigame.realTime +. stalkTime)
+    | _ -> WolfScared 100.0
+  in
+  { animal with kind = Wolf { time = 0.0 ; attitude = attitude } }
 
 let rec generateAnimals n minigame =
-  let (x,y) = chooseRandomEmpty minigame in
-  let (sx,sy) = chooseRandomEmpty minigame in
-  let nextChoice = minigame.realTime +. stalkTime in
-  let animal =
-    { kind =
-        Wolf
-          { time = 0.0
-          ; attitude =
-              WolfStalk
-                ( int_of_float sx
-                , int_of_float sy
-                , minigame.realTime +. stalkTime
-                )
-          }
-    ; x = x
-    ; y = y
-    }
-  in
-  generateAnimals (n-1) { minigame with actors = animal :: minigame.actors }
+  if n <= 0 then
+    minigame
+  else
+    let (sx,sy) = chooseRandomEmpty minigame in
+    let animal =
+      beginStalking minigame
+        { kind = Wolf { time = 0.0 ; attitude = WolfScared scaredTime }
+        ; x = sx
+        ; y = sy
+        }
+    in
+    generateAnimals (n-1) { minigame with actors = animal :: minigame.actors }
 
 let isEntrance = function
   | Some (Entrance _) -> true
@@ -306,6 +317,7 @@ let walkPointOut minigame (ax,ay) (px,py) distanceToPlayer =
   checkScaledMove animalWantDistance
 
 let scaredRate = 12.0
+let stalkRate = 6.0
 
 let walkToward incT moveRate (px,py) animal =
   Math.moveToward incT moveRate (px,py) (animal.x,animal.y)
@@ -333,9 +345,21 @@ let rec oneFrameWolf incT minigame animal wolf =
           oneFrameWolf incT minigame animal { wolf with attitude = WolfAttack }
       | _ -> oneFrameWolf incT minigame animal { wolf with attitude = WolfAttack }
     end
-  | WolfStalk (x,y,t) ->
-    (* Walk around our room trying to get line of sight to player *)
-    animal
+  | WolfStalk (pts,t) ->
+    begin
+      let (ax,ay) = (int_of_float animal.x, int_of_float animal.y) in
+      match pts with
+      | [] ->
+        beginStalking minigame
+          { animal with kind = Wolf { time = 0.0 ; attitude = WolfScared scaredTime } }
+      | hd::tl ->
+        if hd = (ax,ay) then
+          let _ = Js.log (Array.of_list pts) in
+          oneFrameWolf incT minigame animal { wolf with attitude = WolfStalk (tl,t) }
+        else
+          let (nx,ny) = walkToward incT stalkRate hd animal in
+          { animal with x = nx ; y = ny ; kind = Wolf wolf }
+    end
   | WolfAttack ->
     (* Run toward the player at an accelerated rate and deal damage on adjacent tile *)
     animal

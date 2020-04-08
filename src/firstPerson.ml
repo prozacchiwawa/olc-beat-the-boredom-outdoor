@@ -2,7 +2,7 @@ open Contypes
 
 type wolfAttitude
   = WolfScared of float
-  | WolfStalk of (int * int * float)
+  | WolfStalk of ((int * int) list * float)
   | WolfAttack
 
 type wolfState =
