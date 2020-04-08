@@ -86,3 +86,16 @@ let rec range s e =
     []
   else
     s :: (range (s+1) e)
+
+let losInc = 0.25
+
+let rec lineOfSight (sx,sy) (ex,ey) blocked =
+  if (int_of_float sx, int_of_float sy) = (int_of_float ex, int_of_float ey) then
+    true
+  else if blocked (sx,sy) then
+    false
+  else
+    let dist = distance (sx,sy) (ex,ey) in
+    let (dx,dy) = (ex -. sx, ey -. sy) in
+    let (ix,iy) = (dx /. dist *. losInc, dy /. dist *. losInc) in
+    lineOfSight (sx +. ix,sy +. iy) (ex,ey) blocked

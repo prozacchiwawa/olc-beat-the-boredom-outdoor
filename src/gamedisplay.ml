@@ -263,6 +263,11 @@ let drawMiscHud state =
       [ { color = "white" ; str = "Travel Success!" }
       ; { color = "white" ; str = "You got resources!" }
       ]
+  | MapScreen (MiniDefeat _) ->
+    Menu.drawMenu state.spec
+      [ { color = "red" ; str = "You were injured!" }
+      ; { color = "red" ; str = "You lost resources!" }
+      ]
   | HomeScreen -> ()
   | GameOverScreen _ -> ()
   | FirstPerson mg ->

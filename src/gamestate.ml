@@ -20,6 +20,7 @@ type interactionState
   | ChoosingLocation of (int * int)
   | PauseMenu of menuChoice
   | MiniVictory of float
+  | MiniDefeat of float
 
 type gameMode
   = HomeScreen

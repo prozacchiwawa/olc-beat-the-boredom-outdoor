@@ -1,9 +1,10 @@
 open Contypes
 
 type wolfAttitude
-  = WolfScared of float
+  = WolfScared of ((int * int) list * float)
   | WolfStalk of ((int * int) list * float)
-  | WolfAttack
+  | WolfAttack of float
+  | WolfIdle
 
 type wolfState =
   { time : float

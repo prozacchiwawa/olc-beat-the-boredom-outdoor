@@ -218,6 +218,12 @@ let runGame game' keys ts =
       { game with mode = MapScreen Running }
     else
       { game with realTime = realTime }
+  | MapScreen (MiniDefeat t) ->
+    let realTime = game.realTime +. (ts -. lastTs) in
+    if realTime > t then
+      { game with mode = MapScreen Running }
+    else
+      { game with realTime = realTime }
   | MapScreen (PauseMenu choice) ->
     if spacePressed then
       match choice with
@@ -299,8 +305,13 @@ let runGame game' keys ts =
         ; y = if o.win then ty else game.player.y
         }
       in
+      let gt = (game.realTime +. 500.0) in
       { game with
-        mode = MapScreen (MiniVictory (game.realTime +. 500.0))
+        mode =
+          if o.win then
+            MapScreen (MiniVictory gt)
+          else
+            MapScreen (MiniDefeat gt)
       ; player = newPlayer
       }
     | _ ->

@@ -77,7 +77,7 @@ let beginStalking minigame animal =
     match pathToPoint with
     | Some path ->
       WolfStalk (List.rev (Array.to_list path), minigame.realTime +. stalkTime)
-    | _ -> WolfScared 100.0
+    | _ -> WolfIdle
   in
   { animal with kind = Wolf { time = 0.0 ; attitude = attitude } }
 
@@ -88,7 +88,7 @@ let rec generateAnimals n minigame =
     let (sx,sy) = chooseRandomEmpty minigame in
     let animal =
       beginStalking minigame
-        { kind = Wolf { time = 0.0 ; attitude = WolfScared scaredTime }
+        { kind = Wolf { time = 0.0 ; attitude = WolfIdle }
         ; x = sx
         ; y = sy
         }
@@ -322,47 +322,101 @@ let stalkRate = 6.0
 let walkToward incT moveRate (px,py) animal =
   Math.moveToward incT moveRate (px,py) (animal.x,animal.y)
 
+let becomeScared minigame animal wolf =
+  (* Try to run from player *)
+  let playerVsWolfX = animal.x -. minigame.playerX in
+  let playerVsWolfY = animal.y -. minigame.playerY in
+  let distanceToPlayer = Math.distance (0.0,0.0) (playerVsWolfX,playerVsWolfY) in
+  let pathToPoint =
+    walkPointOut minigame (animal.x,animal.y) (playerVsWolfX,playerVsWolfY) distanceToPlayer
+  in
+  match pathToPoint with
+  | Some arr ->
+    let pts = List.rev @@ Array.to_list arr in
+    { animal with
+      kind =
+        Wolf { time = 0.0 ; attitude = WolfScared (pts, minigame.realTime +. scaredTime) }
+    }
+  | _ -> { animal with kind = Wolf { time = 0.0 ; attitude = WolfIdle } }
+
+let attackDist = 6.0
+let attackSpeed = 12.0
+let attackTime = 1.2
+
+let beginAttacking minigame animal wolf =
+  { animal with kind = Wolf { time = 0.0 ; attitude = WolfAttack (minigame.realTime +. attackTime) } }
+
 (* For now, wolves try to achieve a certain distance range from the player, then rush in and
  * attack.
 *)
 let rec oneFrameWolf incT minigame animal wolf =
   match wolf.attitude with
-  | WolfScared f ->
+  | WolfIdle -> Some animal
+  | WolfScared (pts,t) ->
     begin
-      (* Try to run from player *)
-      let playerVsWolfX = animal.x -. minigame.playerX in
-      let playerVsWolfY = animal.y -. minigame.playerY in
-      let distanceToPlayer = Math.distance (0.0,0.0) (playerVsWolfX,playerVsWolfY) in
-      let pathToPoint =
-        walkPointOut minigame (animal.x,animal.y) (playerVsWolfX,playerVsWolfY) distanceToPlayer
-      in
-      match pathToPoint with
-      | Some arr ->
-        if Array.length arr > 1 then
-          let (nx,ny) = walkToward incT scaredRate (Array.get arr 1) animal in
-          { animal with x = nx ; y = ny }
+      let (ax,ay) = (int_of_float animal.x, int_of_float animal.y) in
+      match pts with
+      | [] ->
+        Some
+          (beginStalking minigame
+             { animal with kind = Wolf { time = 0.0; attitude = WolfIdle } }
+          )
+      | hd::tl ->
+        if hd = (ax,ay) then
+          oneFrameWolf incT minigame animal { wolf with attitude = WolfStalk (tl,t) }
         else
-          oneFrameWolf incT minigame animal { wolf with attitude = WolfAttack }
-      | _ -> oneFrameWolf incT minigame animal { wolf with attitude = WolfAttack }
+          let (nx,ny) = walkToward incT stalkRate hd animal in
+          Some { animal with x = nx ; y = ny ; kind = Wolf wolf }
     end
   | WolfStalk (pts,t) ->
     begin
       let (ax,ay) = (int_of_float animal.x, int_of_float animal.y) in
       match pts with
       | [] ->
-        beginStalking minigame
-          { animal with kind = Wolf { time = 0.0 ; attitude = WolfScared scaredTime } }
+        Some
+          (beginStalking minigame
+             { animal with
+               kind =
+                 Wolf { time = 0.0 ; attitude = WolfIdle }
+             }
+          )
       | hd::tl ->
         if hd = (ax,ay) then
-          let _ = Js.log (Array.of_list pts) in
           oneFrameWolf incT minigame animal { wolf with attitude = WolfStalk (tl,t) }
         else
           let (nx,ny) = walkToward incT stalkRate hd animal in
-          { animal with x = nx ; y = ny ; kind = Wolf wolf }
+          (* From stalk to attak *)
+          let playerDist = Math.distance (nx,ny) (minigame.playerX,minigame.playerY) in
+          let lineOfSight =
+            Math.lineOfSight
+              (nx,ny)
+              (minigame.playerX,minigame.playerY)
+              (fun (x',y') ->
+                 let (x,y) = (int_of_float x', int_of_float y') in
+                 if x < 0 || x >= boardSize || y < 0 || y >= boardSize then
+                   true
+                 else
+                   let idx = ((boardSize * y) + x) in
+                   Array.get minigame.values idx <> None
+              )
+          in
+          if playerDist <= attackDist && lineOfSight then
+            Some (beginAttacking minigame animal wolf)
+          else
+            Some { animal with x = nx ; y = ny ; kind = Wolf wolf }
     end
-  | WolfAttack ->
-    (* Run toward the player at an accelerated rate and deal damage on adjacent tile *)
-    animal
+  | WolfAttack t ->
+    if t <= minigame.realTime then
+      Some (becomeScared minigame animal wolf)
+    else if (int_of_float animal.x, int_of_float animal.y) = (int_of_float minigame.playerX,int_of_float minigame.playerY) then
+      None
+    else
+      (* Run toward the player at an accelerated rate and deal damage on adjacent tile *)
+      let (nx,ny) =
+        walkToward incT attackSpeed
+          (int_of_float minigame.playerX,int_of_float minigame.playerY) animal
+      in
+      Some { animal with x = nx ; y = ny }
 
 let oneFrameAnimal incT minigame animal =
   match animal.kind with
@@ -398,6 +452,14 @@ let oneFrame incT moveAmt rotAmt minigame =
     }
   in
   let minigame = handleRot rotAmt @@ handleMove moveAmt minigame in
-  { minigame with
-    actors = List.map (oneFrameAnimal incT minigame) minigame.actors
-  }
+  let updatedAnimals = List.map (oneFrameAnimal incT minigame) minigame.actors in
+  let replacedAnimals = catOptions updatedAnimals in
+  (* A wolf ended the game if true *)
+  if List.length replacedAnimals <> List.length minigame.actors then
+    { minigame with
+      outcome = Some { foodAdj = -50.0 ; win = false }
+    }
+  else
+    { minigame with
+      actors = replacedAnimals
+    }
