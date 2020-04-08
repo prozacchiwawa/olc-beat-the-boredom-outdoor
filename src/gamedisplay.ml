@@ -268,9 +268,29 @@ let drawCityHud state =
     end
   | _ -> ()
 
+let drawSpriteString state x y str =
+  let xInc = 12 in
+  let xStart = 12 in
+  let yStart = 12 in
+  for i = 0 to (String.length str) - 1 do
+    let sprite = SpriteDefs.spriteForLetter (String.get str i) in
+    Sprite.drawSpriteCenter
+      state.spec
+      sprite
+      (xStart + (xInc * i))
+      yStart
+      (sprite.width * 2)
+      (sprite.height * 2)
+  done
+
+let drawPlayerHud state =
+  let playerDataStr = Printf.sprintf "Food: %3.0f" state.game.Gamestate.player.Player.food in
+  drawSpriteString state 0 0 playerDataStr
+
 let drawHud state =
   drawMiscHud state ;
-  drawCityHud state
+  drawCityHud state ;
+  drawPlayerHud state
 
 let displayScreen state =
   match state.game.mode with

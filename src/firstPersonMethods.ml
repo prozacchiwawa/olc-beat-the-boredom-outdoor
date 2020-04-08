@@ -242,7 +242,8 @@ let moveDist = 10.0
 let rotDist = 5.0
 
 (* Wolves pack up and attack the player by encircling him and attacking. *)
-let oneFrameWolf minigame wolf = wolf
+let oneFrameWolf minigame wolf =
+  wolf
 
 let oneFrame moveAmt rotAmt minigame =
   let handleMove amt minigame =
