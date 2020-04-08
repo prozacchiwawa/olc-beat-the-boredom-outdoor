@@ -10,6 +10,26 @@ type roomDesign =
   ; exit : int * int
   }
 
+type roomAStarState =
+  { x : int
+  ; y : int
+  ; parent : roomDesign
+  }
+
+module RoomAStarOrd = struct
+  type t = roomAStarState
+  let compare a b = Pervasives.compare (a.x,a.y) (b.x,b.y)
+  let win a b = (a.x,a.y) = (b.x,b.y)
+  let infinity = 1000000.0
+  let neighbors t =
+    let (x,y) = (t.x,t.y) in
+    [(x,y+1);(x,y-1);(x+1,y);(x-1,y);(x-1,y-1);(x+1,y-1);(x-1,y+1);(x+1,y+1)]
+    |> List.filter (fun (x,y) -> not @@ IPointSet.mem (x,y) t.parent.wallSet)
+    |> List.map (fun (x,y) -> { t with x = x ; y = y })
+end
+
+module RoomAStar = Astar.Make(RoomAStarOrd)
+
 let stringOfRoomIdx x y rooms =
   let ptl =
     rooms.seedSets
@@ -155,12 +175,13 @@ let makeBoundarySet boardSize rooms =
   }
 
 let rec chooseEntranceOrExit x y adj rooms =
-  let whereToLook = (x,y+adj) in
+  let chosenX = int_of_float @@ (float_of_int boardSize) *. (Math.random ()) in
+  let whereToLook = (chosenX,y+adj) in
   let isBlocked = IPointSet.mem whereToLook rooms.wallSet in
   if isBlocked then
     chooseEntranceOrExit ((x+1) mod boardSize) y adj rooms
   else
-    (x,y)
+    (chosenX,y)
 
 (* Make the outer wall and the entrance and exit *)
 let surroundRoom boardSize rooms =

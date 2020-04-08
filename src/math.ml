@@ -45,9 +45,19 @@ let moveToward incT moveRate (tx,ty) (atX,atY) =
     (atX, atY)
   else
     let adx = abs diffX in
-    let moveX = diffX /. adx in
+    let moveX =
+      if adx <> 0.0 then
+        diffX /. adx
+      else
+        0.0
+    in
     let ady = abs diffY in
-    let moveY = diffY /. ady in
+    let moveY =
+      if ady <> 0.0 then
+        diffY /. ady
+      else
+        0.0
+    in
     ( atX +. (incT *. moveX *. moveRate)
     , atY +. (incT *. moveY *. moveRate)
     )

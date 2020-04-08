@@ -5,11 +5,9 @@ open FirstPerson
 
 let emptyMinigame =
   { values = Array.make (boardSize * boardSize) None
-  ; towardExit = Array.make (boardSize * boardSize) None
   ; actors = []
   ; objects = []
   ; roomMap = IPointMap.empty
-  ; towardRoom = IPointMap.empty
   ; playerX = 7.5
   ; playerY = 15.5
   ; playerDir = 0.0
@@ -254,16 +252,24 @@ let draw state minigame =
 let moveDist = 10.0
 let rotDist = 5.0
 
+(* Choose a path starting at ax,ay that maximizes distance from the player in n blocks *)
+let pathAwayFromPlayer n (px,py) (ax,ay) =
+  []
+
 (* For now, wolves try to achieve a certain distance range from the player, then rush in and
  * attack.
 *)
 let oneFrameWolf minigame animal wolf =
   match wolf.attitude with
   | WolfScared ->
-    (* Try to run from player, toward the exit *)
+    (* Try to run from player *)
     animal
-  | WolfStalk -> animal
-  | WolfAttack -> animal
+  | WolfStalk ->
+    (* Walk around our room trying to get line of sight to player *)
+    animal
+  | WolfAttack ->
+    (* Run toward the player at an accelerated rate and deal damage on adjacent tile *)
+    animal
 
 let oneFrameAnimal minigame animal =
   match animal.kind with

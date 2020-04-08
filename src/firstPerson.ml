@@ -5,8 +5,6 @@ type wolfAttitude
   | WolfStalk
   | WolfAttack
 
-type fpDirection = NW | N | NE | E | SE | S | SW | W
-
 type wolfState =
   { time : float
   ; attitude : wolfAttitude
@@ -47,9 +45,7 @@ type path = (int * int) list
 
 type minigame =
   { values : boardSquare option array
-  ; towardExit : fpDirection option array
   ; roomMap : int IPointMap.t
-  ; towardRoom : path IPointMap.t
   ; actors : activeGame list
   ; objects : item list
   ; playerX : float

@@ -31,6 +31,7 @@ let newGame world =
   |> Plants.runPlants
 
 let startingCities = 4
+let hardTravelDistance = 7.0
 let travelFoodGained = 30.0
 let foodTransferRate = 100.0
 
@@ -279,7 +280,18 @@ let runGame game' keys ts =
     let rotAmt = timeInc *. (leftPressed +. rightPressed) in
     match (mg.outcome, game.player.target) with
     | (Some o, Some (tx,ty)) ->
-      let (tx,ty) = ((float_of_int tx) +. 0.5, (float_of_int ty) +. 0.5) in
+      let (dtx,dty) = ((float_of_int tx) +. 0.5, (float_of_int ty) +. 0.5) in
+      let distance = Math.distance (dtx,dty) (game.player.x,game.player.y) in
+      let (tx,ty) =
+        if distance <= hardTravelDistance then
+          (dtx,dty)
+        else
+          let (dx,dy) = (dtx -. game.player.x, dty -. game.player.y) in
+          let (nx,ny) =
+            (dx *. hardTravelDistance /. distance, dy *. hardTravelDistance /. distance)
+          in
+          (game.player.x +. nx,game.player.y +. ny)
+      in
       let newPlayer =
         { game.player with
           food = game.player.food +. o.foodAdj
