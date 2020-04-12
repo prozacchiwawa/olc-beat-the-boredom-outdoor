@@ -1,6 +1,5 @@
 open Contypes
 open Rooms
-open Astar
 open Walkpath
 
 module RoomSpacialState = struct

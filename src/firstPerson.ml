@@ -1,24 +1,6 @@
 open Contypes
-
-type wolfAttitude
-  = WolfScared of ((int * int) list * float)
-  | WolfStalk of ((int * int) list * float)
-  | WolfAttack of float
-  | WolfIdle
-
-type wolfState =
-  { time : float
-  ; attitude : wolfAttitude
-  }
-
-type game
-  = Wolf of wolfState
-
-type activeGame =
-  { kind : game
-  ; x : float
-  ; y : float
-  }
+open Rooms
+open Animal
 
 type item
   = Spear
@@ -58,4 +40,17 @@ type minigame =
   ; worldTime : float
   }
 
-let numAnimals = 6
+let numWolves = 3
+let numDeer = 10
+
+let rec chooseRandomEmpty minigame =
+  let squareChoice =
+    int_of_float @@ (float_of_int (boardSize * boardSize)) *. (Math.random ())
+  in
+  let choiceAtN = Array.get minigame.values squareChoice in
+  if choiceAtN <> None then
+    chooseRandomEmpty minigame
+  else
+    let x = (float_of_int (squareChoice mod boardSize)) +. 0.5 in
+    let y = (float_of_int (squareChoice / boardSize)) +. 0.5 in
+    (x,y)

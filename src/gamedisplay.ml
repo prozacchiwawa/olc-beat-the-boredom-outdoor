@@ -324,24 +324,29 @@ let drawHud state =
   let chd = drawCityHud state in
   drawPlayerHud state chd
 
-let radarLogicalWidth = 9.0
-let radarLogicalHeight = 7.0
+let radarLogicalWidth = 10.0
+let radarLogicalHeight = 10.0
 
 let radarHeight = 40.0
 let radarWidth = 60.0
 
+let positionOnRadar state mg (x,y) =
+  let xa = (x -. mg.FirstPerson.playerX) /. radarLogicalWidth in
+  let ya = (y -. mg.FirstPerson.playerY) /. radarLogicalHeight in
+  let (xi,yi) = Math.rotateCoords mg.playerDir (xa,ya) in
+  if xi < -0.5 || xi > 0.5 || yi < -0.5 || yi > 0.5 then
+    None
+  else
+    Some (Math.clamp (-0.5) 0.5 (xi *. (-1.0)), Math.clamp (-0.5) 0.5 (yi *. (-1.0)))
+
 let drawActorOnHud state mg (x,y) (c,r) =
   let _ = setFillStyle state.spec.context2d @@ fillStyleOfString @@ stringOfColor @@ colorOfCoord (c,r) in
-  let (px,py) = (mg.FirstPerson.playerX, mg.playerY) in
-  let xi =
-    (float_of_int (state.spec.width / 2)) +. ((x -. px) *. radarWidth /. radarLogicalWidth)
-    |> int_of_float
-  in
-  let yi =
-    (float_of_int (state.spec.width / 2)) +. ((y -. py) *. radarHeight /. radarLogicalHeight)
-    |> int_of_float
-  in
-  fillRect state.spec.context2d xi yi 2 2
+  match positionOnRadar state mg (x,y) with
+  | Some (xp,yp) ->
+    let xi = (state.spec.width / 2) + (int_of_float (xp *. radarWidth)) in
+    let yi = state.spec.height - (int_of_float ((radarHeight /. 2.0) +. (yp *. radarHeight))) in
+    fillRect state.spec.context2d xi yi 2 2
+  | _ -> ()
 
 let drawMinimap state mg =
   let top = state.spec.height - (int_of_float radarHeight) in
@@ -350,8 +355,9 @@ let drawMinimap state mg =
   let _ =
     mg.FirstPerson.actors |> List.iter
       (fun a ->
-         match a.FirstPerson.kind with
+         match a.Animal.kind with
          | Wolf _ -> drawActorOnHud state mg (a.x,a.y) (0,7)
+         | Deer _ -> drawActorOnHud state mg (a.x,a.y) (3,7)
       )
   in
   let _ = drawActorOnHud state mg (mg.playerX,mg.playerY) (1,7) in

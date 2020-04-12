@@ -1,5 +1,3 @@
-open Astar
-
 module type AStarSpacialState = sig
   type t
   val blocked : (int * int) -> t -> bool

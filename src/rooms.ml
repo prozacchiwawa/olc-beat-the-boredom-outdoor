@@ -1,4 +1,3 @@
-open Constants
 open Contypes
 
 let boardSize = 31

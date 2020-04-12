@@ -28,7 +28,7 @@ let stepUpWeather biome current =
   else
     Math.nextOf current weatherCycle
 
-let stepDownWeather biome current =
+let stepDownWeather _ current =
   if current == Snow then
     Storm
   else

@@ -87,18 +87,26 @@ let rec range s e =
   else
     s :: (range (s+1) e)
 
-let losInc = 0.25
+let lineOfSight (sx,sy) (ex,ey) blocked =
+  let dist = distance (sx,sy) (ex,ey) in
+  let (dx,dy) = (ex -. sx, ey -. sy) in
+  let steps = int_of_float @@ 4.0 *. dist in
+  let (ix,iy) = (dx /. (float_of_int steps), dy /. (float_of_int steps)) in
+  let rec lineOfSight n =
+    let ax = int_of_float @@ sx +. (ix *. (float_of_int steps)) in
+    let ay = int_of_float @@ sy +. (iy *. (float_of_int steps)) in
+    if n >= steps then
+      true
+    else if blocked (ax,ay) then
+      false
+    else
+      lineOfSight (n+1)
+  in
+  lineOfSight 0
 
-let rec lineOfSight (sx,sy) (ex,ey) blocked =
-  let (isx,isy) = (int_of_float sx, int_of_float sy) in
-  let (iex,iey) = (int_of_float ex, int_of_float ey) in
-  let (idx,idy) = (iex - isx, isy - iey) in
-  if idx >= -1 && idx < 1 && idy >= -1 && idy < 1 then
-    true
-  else if blocked (sx,sy) then
-    false
-  else
-    let dist = distance (sx,sy) (ex,ey) in
-    let (dx,dy) = (ex -. sx, ey -. sy) in
-    let (ix,iy) = (dx /. dist *. losInc, dy /. dist *. losInc) in
-    lineOfSight (sx +. ix,sy +. iy) (ex,ey) blocked
+let clamp i a v = max i (min a v)
+
+let rotateCoords dir (px,py) =
+  let x = (px *. (cos dir)) -. (py *. (sin dir)) in
+  let y = (py *. (cos dir)) +. (px *. (sin dir)) in
+  (x,y)

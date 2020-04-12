@@ -1,5 +1,4 @@
 open Constants
-open Contypes
 open Weather
 open Player
 open Gamestate

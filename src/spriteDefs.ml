@@ -151,6 +151,28 @@ let wolfDef =
    ; { color = ( 2,0) ; row = "      xxx    xx     " }
   |]
 
+let deerEatDef =
+  [| { color = ( 2,0) ; row = "                    " }
+   ; { color = ( 2,0) ; row = "x  xxx              " }
+   ; { color = ( 2,0) ; row = "x  xx               " }
+   ; { color = ( 2,0) ; row = " x xxxxxxxxxxxxxxxx " }
+   ; { color = ( 2,0) ; row = "  xxxxxxxxxxxxxxxxxx" }
+   ; { color = ( 2,0) ; row = " xxxx   xx  xxxxxxxx" }
+   ; { color = ( 2,0) ; row = " xx     xx    xx  xx" }
+   ; { color = ( 2,0) ; row = "      xxx    xx  xx " }
+  |]
+
+let deerWalkDef =
+  [| { color = ( 2,0) ; row = " x    x             " }
+   ; { color = ( 2,0) ; row = " x xxx              " }
+   ; { color = ( 2,0) ; row = "  xxx               " }
+   ; { color = ( 2,0) ; row = " xxxxxxxxxxxxxxxxxx " }
+   ; { color = ( 2,0) ; row = "xxxxxxxxxxxxxxxxxxxx" }
+   ; { color = ( 2,0) ; row = "xx  xx  xx  xxxxxxxx" }
+   ; { color = ( 2,0) ; row = "   xx   xx    xx  xx" }
+   ; { color = ( 2,0) ; row = "   x  xxx      xx  x" }
+  |]
+
 let digit0 =
   [| { color = ( 1,7) ; row = " 000 " }
    ; { color = ( 1,6) ; row = "00 00" }
@@ -545,6 +567,8 @@ let exitSprite = compileSprite exitDef
 let pathSprite = compileSprite pathDef
 let waterSprite = compileSprite waterDef
 let wolfSprite = compileSprite wolfDef
+let deerEatSprite = compileSprite deerEatDef
+let deerWalkSprite = compileSprite deerWalkDef
 
 let spriteForLetter ch =
   let code = Char.code ch in

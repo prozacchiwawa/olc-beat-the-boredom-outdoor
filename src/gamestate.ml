@@ -1,8 +1,5 @@
 open Contypes
-open Constants
-open Knowledge
 open Weather
-open Tod
 open City
 open Worker
 open Player
