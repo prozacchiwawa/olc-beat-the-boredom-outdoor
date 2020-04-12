@@ -40,6 +40,7 @@ type gamestate =
   ; cities : city StringMap.t
   ; workers : worker StringMap.t
   ; plants : IPointSet.t
+  ; score : int
   }
 
 let locateCityNamed gamestate name =

@@ -15,8 +15,17 @@ type boardSquare
   | Path
   | Water
 
+type arrowState =
+  { xi : float
+  ; yi : float
+  ; arrowX : float
+  ; arrowY : float
+  ; endTime : float
+  }
+
 type displayable
   = Board of boardSquare
+  | Missile
   | Actor of game
 
 type gameOutcome =
@@ -38,10 +47,14 @@ type minigame =
   ; outcome : gameOutcome option
   ; realTime : float
   ; worldTime : float
+  ; arrow : arrowState option
   }
 
 let numWolves = 3
 let numDeer = 10
+
+let arrowSpeed = 15.0
+let arrowTime = 0.6
 
 let rec chooseRandomEmpty minigame =
   let squareChoice =

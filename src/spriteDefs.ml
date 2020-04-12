@@ -173,6 +173,17 @@ let deerWalkDef =
    ; { color = ( 2,0) ; row = "   x  xxx      xx  x" }
   |]
 
+let arrowDef =
+  [| { color = ( 1,0) ; row = "                    " }
+   ; { color = ( 1,0) ; row = "                    " }
+   ; { color = ( 1,7) ; row = "        xxxx        " }
+   ; { color = ( 1,6) ; row = "         xx         " }
+   ; { color = ( 1,5) ; row = "         xx         " }
+   ; { color = ( 1,0) ; row = "                    " }
+   ; { color = ( 1,0) ; row = "                    " }
+   ; { color = ( 1,0) ; row = "         xx         " }
+  |]
+
 let digit0 =
   [| { color = ( 1,7) ; row = " 000 " }
    ; { color = ( 1,6) ; row = "00 00" }
@@ -505,6 +516,42 @@ let symbolColon =
    ; { color = ( 1,5) ; row = "     " }
   |]
 
+let symbolNight =
+  [| { color = ( 1,7) ; row = " c   " }
+   ; { color = ( 1,6) ; row = "c    " }
+   ; { color = ( 1,5) ; row = "cc   " }
+   ; { color = ( 1,5) ; row = "cc   " }
+   ; { color = ( 1,5) ; row = "ccc  " }
+   ; { color = ( 1,5) ; row = " cccc" }
+  |]
+
+let symbolDay =
+  [| { color = ( 1,7) ; row = "\\ | /" }
+   ; { color = ( 1,6) ; row = "     " }
+   ; { color = ( 1,5) ; row = "- x -" }
+   ; { color = ( 1,5) ; row = "- x -" }
+   ; { color = ( 1,5) ; row = "     " }
+   ; { color = ( 1,5) ; row = "/ | \\" }
+  |]
+
+let symbolCloudy =
+  [| { color = ( 1,7) ; row = "  xx " }
+   ; { color = ( 1,6) ; row = "xxxxx" }
+   ; { color = ( 1,5) ; row = "     " }
+   ; { color = ( 1,5) ; row = " xx  " }
+   ; { color = ( 1,5) ; row = "xxxx " }
+   ; { color = ( 1,5) ; row = "     " }
+  |]
+
+let symbolRainy =
+  [| { color = ( 1,7) ; row = "  x  " }
+   ; { color = ( 1,6) ; row = " x  x" }
+   ; { color = ( 1,5) ; row = "   x " }
+   ; { color = ( 1,5) ; row = "     " }
+   ; { color = ( 1,5) ; row = " x   " }
+   ; { color = ( 1,5) ; row = "x    " }
+  |]
+
 let emptySprite = compileSprite [| { color = (0,0) ; row = " " } |]
 let colonSprite = compileSprite symbolColon
 
@@ -569,6 +616,11 @@ let waterSprite = compileSprite waterDef
 let wolfSprite = compileSprite wolfDef
 let deerEatSprite = compileSprite deerEatDef
 let deerWalkSprite = compileSprite deerWalkDef
+let daySprite = compileSprite symbolDay
+let nightSprite = compileSprite symbolNight
+let cloudySprite = compileSprite symbolCloudy
+let rainySprite = compileSprite symbolRainy
+let arrowSprite = compileSprite arrowDef
 
 let spriteForLetter ch =
   let code = Char.code ch in
@@ -580,5 +632,13 @@ let spriteForLetter ch =
     Array.get letterSprites (code - 0x61)
   else if ch == ' ' then
     emptySprite
+  else if ch == '*' then
+    daySprite
+  else if ch == '&' then
+    nightSprite
+  else if ch == '^' then
+    cloudySprite
+  else if ch == '\'' then
+    rainySprite
   else
     colonSprite

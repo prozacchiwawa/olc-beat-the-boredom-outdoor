@@ -9,6 +9,7 @@ open FpAstar
 let emptyMinigame realTime =
   { values = Array.make (boardSize * boardSize) None
   ; actors = []
+  ; arrow = None
   ; objects = []
   ; roomMap = IPointMap.empty
   ; playerX = 7.5
@@ -199,6 +200,7 @@ let chooseDecoSprite = function
   | Board Exit -> SpriteDefs.exitSprite
   | Board Water -> SpriteDefs.waterSprite
   | Board Path -> SpriteDefs.pathSprite
+  | Missile -> SpriteDefs.arrowSprite
   | Actor (Wolf _) -> SpriteDefs.wolfSprite
   | Actor (Deer st) ->
     match st.attitude with
@@ -228,8 +230,13 @@ let draw state minigame =
     |> List.map (fun a -> ((a.x,a.y), Actor a.kind))
     |> Array.of_list
   in
+  let arrows =
+    match minigame.arrow with
+    | Some arrow -> [| ((arrow.arrowX,arrow.arrowY), Missile) |]
+    | _ -> [| |]
+  in
   let zz = (0.0,0.0) in
-  Array.concat [ animals ; objectsOnGrid ]
+  Array.concat [ arrows ; animals ; objectsOnGrid ]
   |> Array.map
     (fun ((atX,atY),obj) ->
        let (ax,ay) =
@@ -271,7 +278,7 @@ let oneFrameAnimal incT minigame animal =
   | Wolf wolfState -> Wolf.oneFrame incT minigame animal wolfState
   | Deer deerState -> Deer.oneFrame incT minigame animal deerState
 
-let oneFrame ts moveAmt' rotAmt' minigame =
+let oneFrame ts moveAmt' rotAmt' space minigame =
   let lastTs = minigame.realTime in
   let lastWorldTime = minigame.worldTime in
   let worldTime = minigame.worldTime +. ((ts -. lastTs) /. 6000.0) in
@@ -311,19 +318,44 @@ let oneFrame ts moveAmt' rotAmt' minigame =
       playerDir = minigame.playerDir +. (amt *. rotDist)
     }
   in
+  let spawnArrow minigame =
+    let (vx,vy) = viewDirection (minigame.playerDir +. (Math.pi /. 2.0)) in
+    Some
+      { arrowX = minigame.playerX
+      ; arrowY = minigame.playerY
+      ; endTime = minigame.worldTime +. arrowTime
+      ; xi = vx *. arrowSpeed
+      ; yi = vy *. arrowSpeed
+      }
+  in
   let minigame = handleRot rotAmt @@ handleMove moveAmt minigame in
   let updatedAnimals = List.map (oneFrameAnimal incT minigame) minigame.actors in
   let atePlayer =
     AnimalMethods.atePlayer updatedAnimals
   in
-  let killedByPlayer =
-    AnimalMethods.killedByPlayer updatedAnimals
-    |> catOptions
-    |> List.fold_left (+.) 0.0
-  in
   let replacedAnimals =
     AnimalMethods.movedAnimals updatedAnimals
     |> catOptions
+  in
+  let (hitAnimals,missedAnimals) =
+    match minigame.arrow with
+    | None -> ([], replacedAnimals)
+    | Some arrow ->
+      List.fold_left
+        (fun (hit,miss) a ->
+           let distance = Math.distance (arrow.arrowX,arrow.arrowY) (a.x,a.y) in
+           if distance < 0.3 then
+             (((AnimalDied 3.0)::hit), miss)
+           else
+             (hit, a::miss)
+        )
+        ([],[])
+        replacedAnimals
+  in
+  let killedByPlayer =
+    AnimalMethods.killedByPlayer (List.concat [ updatedAnimals ; hitAnimals ])
+    |> catOptions
+    |> List.fold_left (+.) 0.0
   in
   (* A wolf ended the game if true *)
   if atePlayer <> [] then
@@ -332,6 +364,23 @@ let oneFrame ts moveAmt' rotAmt' minigame =
     }
   else
     { minigame with
-      actors = replacedAnimals
+      actors = missedAnimals
     ; score = killedByPlayer +. minigame.score
+    ; arrow =
+        if minigame.arrow = None && space then
+          let a = spawnArrow minigame in
+          let _ = Js.log a in
+          a
+        else
+          match minigame.arrow with
+          | Some arrow ->
+            if arrow.endTime < minigame.worldTime then
+              None
+            else
+              Some
+                { arrow with
+                  arrowX = arrow.arrowX +. (arrow.xi *. incT)
+                ; arrowY = arrow.arrowY +. (arrow.yi *. incT)
+                }
+          | _ -> None
     }

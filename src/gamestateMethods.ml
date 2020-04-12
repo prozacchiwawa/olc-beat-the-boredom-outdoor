@@ -25,6 +25,7 @@ let newGame world =
   ; cities = StringMap.empty
   ; workers = StringMap.empty
   ; plants = IPointSet.empty
+  ; score = 0
   }
   |> Plants.startPlants 50
   |> Plants.runPlants
@@ -207,10 +208,9 @@ let runGame game' keys ts =
       startGame game
     else
       game
-  | GameOverScreen endGameOver ->
-    let realTime = game.realTime +. (ts -. lastTs) in
-    if realTime > endGameOver then
-      { game with mode = HomeScreen ; realTime = realTime }
+  | GameOverScreen _ ->
+    if spacePressed then
+      startGame game
     else
       game
   | MapScreen (MiniVictory t) ->
@@ -313,5 +313,5 @@ let runGame game' keys ts =
       ; player = newPlayer
       }
     | _ ->
-      let minigame = FirstPersonMethods.oneFrame ts moveAmt rotAmt mg in
+      let minigame = FirstPersonMethods.oneFrame ts moveAmt rotAmt spacePressed mg in
       { game with mode = FirstPerson minigame }

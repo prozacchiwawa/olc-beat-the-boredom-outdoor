@@ -229,10 +229,7 @@ let drawMoveTarget (x,y) state =
 let drawMiscHud state =
   match state.game.mode with
   | MapScreen Running ->
-    let _ =
-      drawUpperRightStatus state @@ Printf.sprintf "Running: %s" @@
-      Weather.weatherToString state.game.weather
-    in
+    let _ = Weather.weatherToString state.game.weather in
     begin
       match state.game.player.target with
       | Some tgt -> drawMoveTarget tgt state
@@ -317,7 +314,26 @@ let drawPlayerHud state chb =
     | _ -> (12,12)
   in
   let playerDataStr = Printf.sprintf "Food: %3.0f" state.game.Gamestate.player.Player.food in
-  drawSpriteString state xStart yStart playerDataStr
+  let _ = drawSpriteString state xStart yStart playerDataStr in
+  let dayPhase = int_of_float (state.game.worldTime *. 4.0) in
+  let day =
+    if dayPhase < 1 || dayPhase >= 3 then
+      '&'
+    else
+      '*'
+  in
+  let weather =
+    match state.game.weather with
+    | Clear -> ' '
+    | Pokkari -> '^'
+    | Fog -> '^'
+    | Overcast -> '^'
+    | Rain -> '\''
+    | Storm -> '\''
+    | Snow -> '\''
+  in
+  let gameDataStr = Printf.sprintf "Score: %05d %c - %c" state.game.Gamestate.score day weather in
+  drawSpriteString state (state.spec.width / 2) yStart gameDataStr
 
 let drawHud state =
   drawMiscHud state ;
