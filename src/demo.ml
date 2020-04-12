@@ -11,9 +11,6 @@ let runGame state ts =
   let newGame = GamestateMethods.runGame state.game pressed ts in
   let newState = { state with game = newGame } in
   let _ = Gamedisplay.displayScreen newState in
-  let keys = String.concat "," @@ StringSet.elements !keysPressed in
-  let _ = setFillStyle state.spec.context2d @@ fillStyleOfString "white" in
-  let _ = fillText state.spec.context2d keys 10 10 in
   { state with game = newGame ; keys = pressed }
 
 let main _ =

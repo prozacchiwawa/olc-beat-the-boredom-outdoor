@@ -144,14 +144,6 @@ let drawMapScreen state =
   in
   ()
 
-let drawUpperRightStatus state str =
-  let metrics = measureText state.spec.context2d str in
-  let width = getMeasureWidth metrics |> int_of_float in
-  let ascent = getFontBBAscent metrics |> int_of_float in
-  let xAt = state.spec.width - width in
-  let _ = setFillStyle state.spec.context2d @@ fillStyleOfString "white" in
-  fillText state.spec.context2d str (xAt - 10) (ascent + 10)
-
 let cityStatusHeight = 45
 let cityStatusLeft = 30
 
@@ -190,12 +182,7 @@ let drawCityStatus state (city : City.city) =
   let foodWidth = city.food /. maxView *. (float_of_int state.spec.width) *. 0.75 in
   let popWidth = city.population /. maxView *. (float_of_int state.spec.width) *. 0.75 in
   (* render name *)
-  let _ =
-    setFillStyle state.spec.context2d @@ fillStyleOfString @@ "white"
-  in
-  let _ =
-    fillText state.spec.context2d tagline cityStatusLeft (ystart + 5 + ascent)
-  in
+  let _ = SpriteString.draw state (cityStatusLeft + 5) (ystart + 8) tagline in
   (* Render food *)
   let _ =
     setFillStyle state.spec.context2d @@
@@ -229,53 +216,34 @@ let drawMoveTarget (x,y) state =
 let drawMiscHud state =
   match state.game.mode with
   | MapScreen Running ->
-    let _ = Weather.weatherToString state.game.weather in
     begin
       match state.game.player.target with
       | Some tgt -> drawMoveTarget tgt state
       | _ -> ()
     end
   | MapScreen (ChoosingLocation (x,y)) ->
-    let _ = drawMoveTarget (x,y) state in
-    drawUpperRightStatus state @@ Printf.sprintf "Choose location (%d,%d)" x y
+    drawMoveTarget (x,y) state
   | MapScreen (PauseMenu choice) ->
-    let choiceColor ch =
+    let decorate ch str =
       if ch = choice then
-        "yellow"
+        "* " ^ str ^ " *"
       else
         match (ch, state.game.player.target) with
-        | (Encounter, None) -> stringOfColor @@ colorOfCoord (0,1)
+        | (Encounter, None) -> "X " ^ str ^ " X"
         | (FoundCity, _) ->
           if state.game.player.food < 100.0 then
-            stringOfColor @@ colorOfCoord (0,1)
+            "X " ^ str ^ " X"
           else
-            "white"
-        | _ -> "white"
+            "  " ^ str ^ "  "
+        | _ -> "  " ^ str ^ "  "
     in
-    let _ =
-      Menu.drawMenu state.spec
-        [ { color = choiceColor Resume         ; str = "Resume" }
-        ; { color = choiceColor ChooseLocation ; str = "Change Target" }
-        ; { color = choiceColor Encounter      ; str = "Hard Travel" }
-        ; { color = choiceColor FoundCity      ; str = "Found City" }
-        ]
-    in
-    drawUpperRightStatus state "Select..."
-  | MapScreen (MiniVictory _) ->
-    Menu.drawMenu state.spec
-      [ { color = "white" ; str = "Travel Success!" }
-      ; { color = "white" ; str = "You got resources!" }
+    Menu.drawMenu state
+      [ decorate Resume "Resume"
+      ; decorate ChooseLocation "Change Target"
+      ; decorate Encounter "Hard Travel"
+      ; decorate FoundCity "Found City"
       ]
-  | MapScreen (MiniDefeat _) ->
-    Menu.drawMenu state.spec
-      [ { color = "red" ; str = "You were injured!" }
-      ; { color = "red" ; str = "You lost resources!" }
-      ]
-  | HomeScreen -> ()
-  | GameOverScreen _ -> ()
-  | FirstPerson mg ->
-    drawUpperRightStatus state @@
-    Printf.sprintf "First Person %f" mg.worldTime
+  | _ -> ()
 
 let drawCityHud state =
   match state.game.mode with
@@ -299,19 +267,6 @@ let drawCityHud state =
     end
   | _ -> None
 
-let drawSpriteString state x y str =
-  let xInc = 12 in
-  for i = 0 to (String.length str) - 1 do
-    let sprite = SpriteDefs.spriteForLetter (String.get str i) in
-    Sprite.drawSpriteCenter
-      state.spec
-      sprite
-      (x + (xInc * i))
-      y
-      (sprite.width * 2)
-      (sprite.height * 2)
-  done
-
 let drawPlayerHud state chb =
   let (xStart,yStart) =
     match chb with
@@ -320,7 +275,7 @@ let drawPlayerHud state chb =
     | _ -> (12,12)
   in
   let playerDataStr = Printf.sprintf "Food: %3.0f" state.game.Gamestate.player.Player.food in
-  let _ = drawSpriteString state xStart yStart playerDataStr in
+  let _ = SpriteString.draw state xStart yStart playerDataStr in
   let dayPhase = int_of_float (state.game.worldTime *. 4.0) in
   let day =
     if dayPhase < 1 || dayPhase >= 3 then
@@ -339,9 +294,19 @@ let drawPlayerHud state chb =
     | Snow -> '\''
   in
   let gameDataStr =
-    Printf.sprintf "Score: %05d %c - %c" state.game.Gamestate.score day weather
+    match state.game.mode with
+    | MapScreen (ChoosingLocation (x,y)) ->
+      Printf.sprintf "Choose location %d:%d" x y
+    | MapScreen (PauseMenu _) ->
+      "Select an action"
+    | MapScreen (MiniVictory _) ->
+      "Travel Success"
+    | MapScreen (MiniDefeat _) ->
+      "You were Injured"
+    | _ ->
+      Printf.sprintf "Score: %05d %c - %c" state.game.Gamestate.score day weather
   in
-  drawSpriteString state (state.spec.width / 2) yStart gameDataStr
+  SpriteString.draw state (state.spec.width / 2) yStart gameDataStr
 
 let drawHud state =
   drawMiscHud state ;
@@ -393,7 +358,7 @@ let drawFirstPersonHud state mg =
     mg.FirstPerson.score
   in
   let playerDataStr = Printf.sprintf "Food: %3.0f" foodAmt in
-  let _ = drawSpriteString state 12 12 playerDataStr in
+  let _ = SpriteString.draw state 12 12 playerDataStr in
   drawMinimap state mg
 
 let displayScreen state =
@@ -402,11 +367,9 @@ let displayScreen state =
     let theGame = state.game in
     let sunnyGame = { theGame with weather = Weather.Clear ; timeOfDay = 0.5 } in
     let _ = drawFirstPersonBackdrop { state with game = sunnyGame } in
-    Menu.drawMenu state.spec
-      [ { color = "white" ; str = "Start" } ]
+    Menu.drawMenu state ["Start"]
   | Gamestate.GameOverScreen _ ->
-    Menu.drawMenu state.spec
-      [ { color = "red" ; str = "Game Over" } ]
+    Menu.drawMenu state ["Game Over"]
   | Gamestate.MapScreen _ ->
     let _ = drawMapScreen state in
     drawHud state

@@ -277,20 +277,22 @@ let runGame game' keys ts =
         StringMap.fold (fun _ c s -> IPointSet.add (c.x,c.y) s) game.cities IPointSet.empty
         |> Life.pointsAndNeighbors
       in
+      let cantSelect newMode =
+        (newMode == Encounter && game.player.target == None) ||
+        (newMode == FoundCity &&
+         (game.player.food < 100.0 || IPointSet.mem (px,py) alreadyHaveCities))
+      in
       let f =
         if downPressed then Math.nextOf else if upPressed then Math.prevOf else (fun a _ -> a)
       in
-      let newMode = f choice menuChoices in
-      let newMode =
-        if newMode == Encounter && game.player.target == None then
-          f newMode menuChoices
-        else if newMode == FoundCity &&
-                (game.player.food < 100.0 || IPointSet.mem (px,py) alreadyHaveCities)
-        then
-          f newMode menuChoices
+      let rec chooseNextMode choice =
+        let newMode = f choice menuChoices in
+        if cantSelect newMode then
+          chooseNextMode newMode
         else
           newMode
       in
+      let newMode = chooseNextMode choice in
       { game with mode = MapScreen (PauseMenu newMode) }
 
   | MapScreen (ChoosingLocation (lx,ly)) ->
