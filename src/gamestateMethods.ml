@@ -177,7 +177,7 @@ let oneFrame game ts =
               (fun score (_,city) ->
                  score +. (100.0 *. city.food /. city.population)
               )
-              0.0
+              (float_of_int game.score)
               (StringMap.bindings game.cities)
         }
     else

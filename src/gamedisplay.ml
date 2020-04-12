@@ -276,7 +276,7 @@ let drawPlayerHud state chb =
   in
   let playerDataStr = Printf.sprintf "Food: %3.0f" state.game.Gamestate.player.Player.food in
   let _ = SpriteString.draw state xStart yStart playerDataStr in
-  let dayPhase = int_of_float (state.game.worldTime *. 4.0) in
+  let dayPhase = int_of_float (state.game.worldTime *. 4.0) mod 4 in
   let day =
     if dayPhase < 1 || dayPhase >= 3 then
       '&'
