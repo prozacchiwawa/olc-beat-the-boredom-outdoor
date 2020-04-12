@@ -19,5 +19,5 @@ let run set =
     (fun (x,y) ->
        let activeNeighbors = IPointSet.inter (neighbors (x,y)) set in
        let cardinal = IPointSet.cardinal activeNeighbors in
-       (IPointSet.mem (x,y) set && cardinal == 2) || cardinal == 1 || cardinal == 3
+       (IPointSet.mem (x,y) set && cardinal == 2) || cardinal == 3
     )

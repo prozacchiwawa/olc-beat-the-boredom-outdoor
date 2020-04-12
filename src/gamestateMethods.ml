@@ -242,7 +242,7 @@ let runGame game' keys ts =
         let altitude = Array.get game.world.groundData (py * game.world.groundX + px) in
         let altitudeBlock = int_of_float (altitude *. 7.0) in
         { game with
-          mode = FirstPerson (FirstPersonMethods.makeMazeDef altitudeBlock)
+          mode = FirstPerson (FirstPersonMethods.makeMazeDef altitudeBlock ts)
         }
     else
       let f =
@@ -275,16 +275,12 @@ let runGame game' keys ts =
     else
       oneFrame game (ts -. lastTs)
   | FirstPerson mg ->
-    let lastWorldTime = game.worldTime in
-    let game = runDayCycle game (ts -. lastTs) in
-    let worldTime = game.worldTime in
-    let timeInc = worldTime -. lastWorldTime in
     let downPressed = if StringSet.mem "ARROWDOWN" keys then -1.0 else 0.0 in
     let upPressed = if StringSet.mem "ARROWUP" keys then 1.0 else 0.0 in
     let leftPressed = if StringSet.mem "ARROWLEFT" keys then -1.0 else 0.0 in
     let rightPressed = if StringSet.mem "ARROWRIGHT" keys then 1.0 else 0.0 in
-    let moveAmt = timeInc *. (downPressed +. upPressed) in
-    let rotAmt = timeInc *. (leftPressed +. rightPressed) in
+    let moveAmt = downPressed +. upPressed in
+    let rotAmt = leftPressed +. rightPressed in
     match (mg.outcome, game.player.target) with
     | (Some o, Some (tx,ty)) ->
       let (dtx,dty) = ((float_of_int tx) +. 0.5, (float_of_int ty) +. 0.5) in
@@ -317,5 +313,5 @@ let runGame game' keys ts =
       ; player = newPlayer
       }
     | _ ->
-      let minigame = FirstPersonMethods.oneFrame timeInc moveAmt rotAmt mg in
+      let minigame = FirstPersonMethods.oneFrame ts moveAmt rotAmt mg in
       { game with mode = FirstPerson minigame }

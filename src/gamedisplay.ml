@@ -272,7 +272,7 @@ let drawMiscHud state =
   | GameOverScreen _ -> ()
   | FirstPerson mg ->
     drawUpperRightStatus state @@
-    Printf.sprintf "First Person %f:%f v %f" mg.playerX mg.playerY mg.playerDir
+    Printf.sprintf "First Person %f" mg.worldTime
 
 let drawCityHud state =
   match state.game.mode with
@@ -324,6 +324,48 @@ let drawHud state =
   let chd = drawCityHud state in
   drawPlayerHud state chd
 
+let radarLogicalWidth = 9.0
+let radarLogicalHeight = 7.0
+
+let radarHeight = 40.0
+let radarWidth = 60.0
+
+let drawActorOnHud state mg (x,y) (c,r) =
+  let _ = setFillStyle state.spec.context2d @@ fillStyleOfString @@ stringOfColor @@ colorOfCoord (c,r) in
+  let (px,py) = (mg.FirstPerson.playerX, mg.playerY) in
+  let xi =
+    (float_of_int (state.spec.width / 2)) +. ((x -. px) *. radarWidth /. radarLogicalWidth)
+    |> int_of_float
+  in
+  let yi =
+    (float_of_int (state.spec.width / 2)) +. ((y -. py) *. radarHeight /. radarLogicalHeight)
+    |> int_of_float
+  in
+  fillRect state.spec.context2d xi yi 2 2
+
+let drawMinimap state mg =
+  let top = state.spec.height - (int_of_float radarHeight) in
+  let _ = setFillStyle state.spec.context2d @@ fillStyleOfString @@ stringOfColor @@ colorOfCoord (7,1) in
+  let _ = fillRect state.spec.context2d 0 top state.spec.width (state.spec.height - top) in
+  let _ =
+    mg.FirstPerson.actors |> List.iter
+      (fun a ->
+         match a.FirstPerson.kind with
+         | Wolf _ -> drawActorOnHud state mg (a.x,a.y) (0,7)
+      )
+  in
+  let _ = drawActorOnHud state mg (mg.playerX,mg.playerY) (1,7) in
+  ()
+
+let drawFirstPersonHud state mg =
+  let foodAmt =
+    state.game.Gamestate.player.Player.food +.
+    mg.FirstPerson.score
+  in
+  let playerDataStr = Printf.sprintf "Food: %3.0f" foodAmt in
+  let _ = drawSpriteString state 12 12 playerDataStr in
+  drawMinimap state mg
+
 let displayScreen state =
   match state.game.mode with
   | Gamestate.HomeScreen ->
@@ -341,4 +383,4 @@ let displayScreen state =
   | Gamestate.FirstPerson mg ->
     let _ = drawFirstPersonBackdrop state in
     let _ = FirstPersonMethods.draw state mg in
-    drawHud state
+    drawFirstPersonHud state mg

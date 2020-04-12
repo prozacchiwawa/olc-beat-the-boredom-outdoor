@@ -55,6 +55,7 @@ type minigame =
   ; score : float
   ; outcome : gameOutcome option
   ; realTime : float
+  ; worldTime : float
   }
 
 let numAnimals = 6

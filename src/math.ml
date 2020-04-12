@@ -90,7 +90,10 @@ let rec range s e =
 let losInc = 0.25
 
 let rec lineOfSight (sx,sy) (ex,ey) blocked =
-  if (int_of_float sx, int_of_float sy) = (int_of_float ex, int_of_float ey) then
+  let (isx,isy) = (int_of_float sx, int_of_float sy) in
+  let (iex,iey) = (int_of_float ex, int_of_float ey) in
+  let (idx,idy) = (iex - isx, isy - iey) in
+  if idx >= -1 && idx < 1 && idy >= -1 && idy < 1 then
     true
   else if blocked (sx,sy) then
     false

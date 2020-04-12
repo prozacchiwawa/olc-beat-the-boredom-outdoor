@@ -83,13 +83,7 @@ let runCity gamestate incT (city : city) =
       ({ city with ruin = ruined }, None)
   else if city.ruin == 0.0 then
     let updatedFood = city.food -. (city.population *. eatingRate) *. incT in
-    let updatedPop =
-      if updatedFood > city.population +. 1.25 then
-        city.population +. city.population *. 0.1
-      else
-        city.population
-    in
-    let cityWithFood = { city with food = updatedFood ; population = updatedPop } in
+    let cityWithFood = { city with food = updatedFood } in
     let prob = workerProb city in
     let rnd = (Math.random ()) /. incT in
     let trySpawnWorker = prob > rnd in
