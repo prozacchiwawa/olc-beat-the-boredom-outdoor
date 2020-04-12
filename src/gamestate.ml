@@ -8,9 +8,10 @@ type menuChoice
   = Resume
   | ChooseLocation
   | Encounter
+  | FoundCity
 
 let menuChoices =
-  [ Resume; ChooseLocation; Encounter ]
+  [ Resume; ChooseLocation; Encounter; FoundCity ]
 
 type interactionState
   = Running

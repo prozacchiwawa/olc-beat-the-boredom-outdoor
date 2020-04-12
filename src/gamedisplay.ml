@@ -245,6 +245,11 @@ let drawMiscHud state =
       else
         match (ch, state.game.player.target) with
         | (Encounter, None) -> stringOfColor @@ colorOfCoord (0,1)
+        | (FoundCity, _) ->
+          if state.game.player.food < 100.0 then
+            stringOfColor @@ colorOfCoord (0,1)
+          else
+            "white"
         | _ -> "white"
     in
     let _ =
@@ -252,6 +257,7 @@ let drawMiscHud state =
         [ { color = choiceColor Resume         ; str = "Resume" }
         ; { color = choiceColor ChooseLocation ; str = "Change Target" }
         ; { color = choiceColor Encounter      ; str = "Hard Travel" }
+        ; { color = choiceColor FoundCity      ; str = "Found City" }
         ]
     in
     drawUpperRightStatus state "Select..."
@@ -332,7 +338,9 @@ let drawPlayerHud state chb =
     | Storm -> '\''
     | Snow -> '\''
   in
-  let gameDataStr = Printf.sprintf "Score: %05d %c - %c" state.game.Gamestate.score day weather in
+  let gameDataStr =
+    Printf.sprintf "Score: %05d %c - %c" state.game.Gamestate.score day weather
+  in
   drawSpriteString state (state.spec.width / 2) yStart gameDataStr
 
 let drawHud state =

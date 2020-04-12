@@ -41,7 +41,7 @@ let addCity city game =
   { game with cities = StringMap.add city.name city game.cities }
 
 let rec raiseCity n game =
-  if n >= 5 then
+  if n <= 0 then
     game
   else
     let cx = int_of_float @@ (Math.random ()) *. (float_of_int worldSide) in
@@ -57,11 +57,11 @@ let rec raiseCity n game =
           population = 80.0 +. ((Math.random ()) *. 40.0)
         }
     else
-      raiseCity (n+1) game
+      raiseCity (n-1) game
 
 let generateStartCities game =
   let citiesDummy = Array.make startingCities () in
-  Array.fold_left (fun game _ -> raiseCity 0 game) game citiesDummy
+  Array.fold_left (fun game _ -> raiseCity startingCities game) game citiesDummy
 
 let startGame game =
   { game with mode = MapScreen Running }
@@ -163,7 +163,26 @@ let oneFrame game ts =
     (int_of_float (worldTime /. Plants.plantGrowth)) !=
     (int_of_float (lastWorldTime /. Plants.plantGrowth))
   in
-  let game = if newWeek then Plants.runPlants game else game in
+  let game =
+    if newWeek then
+      Plants.runPlants
+        { game with
+          cities =
+            game.cities |> StringMap.map
+              (fun city ->
+                 { city with population = city.population +. 10.0 }
+              )
+        ; score = int_of_float @@
+            List.fold_left
+              (fun score (_,city) ->
+                 score +. (100.0 *. city.food /. city.population)
+              )
+              0.0
+              (StringMap.bindings game.cities)
+        }
+    else
+      game
+  in
   (* Run player *)
   let amountOfFoodToGain = timeInc *. travelFoodGained in
   let playerRes =
@@ -226,6 +245,8 @@ let runGame game' keys ts =
     else
       { game with realTime = realTime }
   | MapScreen (PauseMenu choice) ->
+    let px = int_of_float game.player.x in
+    let py = int_of_float game.player.y in
     if spacePressed then
       match choice with
       | Resume -> { game with mode = MapScreen Running }
@@ -236,21 +257,36 @@ let runGame game' keys ts =
           | None -> (int_of_float game.player.x, int_of_float game.player.y)
         in
         { game with mode = MapScreen (ChoosingLocation pt) }
+      | FoundCity ->
+        let nc = CityMethods.newCity px py in
+        { game with
+          mode = MapScreen Running
+        ; player = { game.player with food = game.player.food -. 100.0 }
+        } |> addCity
+          { nc with
+            population = 80.0 +. ((Math.random ()) *. 40.0)
+          }
       | Encounter ->
-        let px = int_of_float game.player.x in
-        let py = int_of_float game.player.y in
         let altitude = Array.get game.world.groundData (py * game.world.groundX + px) in
         let altitudeBlock = int_of_float (altitude *. 7.0) in
         { game with
           mode = FirstPerson (FirstPersonMethods.makeMazeDef altitudeBlock ts)
         }
     else
+      let alreadyHaveCities =
+        StringMap.fold (fun _ c s -> IPointSet.add (c.x,c.y) s) game.cities IPointSet.empty
+        |> Life.pointsAndNeighbors
+      in
       let f =
         if downPressed then Math.nextOf else if upPressed then Math.prevOf else (fun a _ -> a)
       in
       let newMode = f choice menuChoices in
       let newMode =
         if newMode == Encounter && game.player.target == None then
+          f newMode menuChoices
+        else if newMode == FoundCity &&
+                (game.player.food < 100.0 || IPointSet.mem (px,py) alreadyHaveCities)
+        then
           f newMode menuChoices
         else
           newMode

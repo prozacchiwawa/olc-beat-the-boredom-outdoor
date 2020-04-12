@@ -189,6 +189,7 @@ let digit0 =
    ; { color = ( 1,6) ; row = "00 00" }
    ; { color = ( 1,5) ; row = "00 00" }
    ; { color = ( 1,5) ; row = "00 00" }
+   ; { color = ( 1,5) ; row = "00 00" }
    ; { color = ( 1,6) ; row = " 000 " }
   |]
 
